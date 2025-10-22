@@ -1,0 +1,10 @@
+[package]
+name = "server"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+bevy = "0.17.2"
+bevy_renet = "3.0.0"
+fastrand = "2.3.0"
+game_core = { path = "../game_core" }
