@@ -1,4 +1,5 @@
-use crate::system::server_event::server_event_system;
+use crate::resource::ServerLobby;
+use crate::system::server_event::on_server_event;
 use bevy::app::{App, Plugin, Update};
 use bevy_renet::netcode::{
     NetcodeServerPlugin, NetcodeServerTransport, ServerAuthentication, ServerConfig,
@@ -14,7 +15,7 @@ impl Plugin for ServerPlugin {
 
         build_server_transport(app);
 
-        app.add_systems(Update, server_event_system);
+        app.add_systems(Update, on_server_event);
     }
 }
 
@@ -38,4 +39,5 @@ fn build_server_transport(app: &mut App) {
 
     app.insert_resource(server);
     app.insert_resource(transport);
+    app.insert_resource(ServerLobby::default());
 }

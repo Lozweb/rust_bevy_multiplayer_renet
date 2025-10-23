@@ -74,6 +74,17 @@ pub fn get_socket(socket_address: SocketAddr) -> UdpSocket {
     }
 }
 
+/// Désérialise un message serveur encodé en bincode.
+///
+/// # Paramètres
+/// - `message` : tranche d'octets contenant le message sérialisé.
+///
+/// # Retour
+/// - `(ServerMessages, usize)` : le message décodé et le nombre d'octets consommés.
+///   En cas d'échec de la désérialisation, la fonction :
+///   - journalise l'erreur via `bevy::log::error`,
+///   - retourne `ServerMessages::Error { message }` contenant le texte de l'erreur,
+///   - et `0` comme nombre d'octets consommés.
 pub fn deserialize_server_message(message: &[u8]) -> (ServerMessages, usize) {
     bincode::serde::decode_from_slice(message, bincode::config::standard()).unwrap_or_else(|err| {
         error!("Deserialization error: {:?}", err);
@@ -86,6 +97,14 @@ pub fn deserialize_server_message(message: &[u8]) -> (ServerMessages, usize) {
     })
 }
 
+/// Sérialise un `ServerMessages` en `Vec<u8>` au format bincode.
+///
+/// # Paramètres
+/// - `message` : référence vers le message serveur à sérialiser.
+///
+/// # Retour
+/// - `Vec<u8>` : octets sérialisés. En cas d'échec, la fonction journalise l'erreur
+///   via `bevy::log::error` et retourne un vecteur vide.
 pub fn serialize_server_message(message: &ServerMessages) -> Vec<u8> {
     bincode::serde::encode_to_vec(message, bincode::config::standard()).unwrap_or_else(|err| {
         error!("Serialization error: {:?}", err);

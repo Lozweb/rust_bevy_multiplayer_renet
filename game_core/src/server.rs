@@ -1,4 +1,4 @@
-use bevy::prelude::Component;
+use bevy::prelude::{Component, Entity, Vec3};
 use bevy_renet::renet::{ChannelConfig, ClientId, SendType};
 use serde::{Deserialize, Serialize};
 use std::time::Duration;
@@ -26,15 +26,15 @@ pub enum ServerMessages {
     /// - `id` : identifiant unique du client ('ClientId').
     /// - `translation` : position initiale du joueur sous la forme `[x, y, z]'.
     PlayerCreate {
-        entity: u64,
-        id: ClientId,
-        translation: [f32; 3],
+        client_id: ClientId,
+        position: Vec3,
+        entity: Entity,
     },
     /// Supprime un joueur côté client.
     ///
     /// - `id` : identifiant unique du client à retirer.
     PlayerRemove {
-        id: ClientId,
+        client_id: ClientId,
     },
     Error {
         message: String,

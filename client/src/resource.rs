@@ -25,8 +25,9 @@ impl ClientLobby {
     /// Supprime un joueur du lobby client.
     ///
     /// - `client_id` : identifiant unique du client à retirer.
-    pub fn remove_player(&mut self, client_id: &ClientId) {
-        self.players.remove(client_id);
+    /// - Retourne une option contenant les `PlayerEntities` retirées si trouvées.
+    pub fn remove_player(&mut self, client_id: &ClientId) -> Option<PlayerEntities> {
+        self.players.remove(client_id)
     }
 
     /// Récupère les entités du joueur associées à un `ClientId`.

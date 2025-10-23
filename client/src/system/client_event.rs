@@ -1,86 +1,64 @@
 use crate::resource::{ClientLobby, CurrentClientId, PlayerMapping};
-use bevy::asset::Assets;
-use bevy::log::{error, info};
-use bevy::math::Vec3;
-use bevy::mesh::{Mesh, Mesh2d};
-use bevy::prelude::{
-    Circle, ColorMaterial, Commands, Entity, MeshMaterial2d, Name, Res, ResMut, Transform,
-};
-use bevy_renet::renet::{ClientId, RenetClient};
+use bevy::log::error;
+use bevy::prelude::{info, Assets, ColorMaterial, Commands, Mesh, Res, ResMut};
+use bevy_renet::renet::RenetClient;
 use game_core::client::PlayerEntities;
 use game_core::network::deserialize_server_message;
-use game_core::player::ControlledPlayer;
+use game_core::player::{spawn_player, ControlledPlayer};
 use game_core::server::{ServerChannel, ServerMessages};
 
-pub fn client_event_system(
-    client_id: Res<CurrentClientId>,
+pub fn on_server_event(
+    current_client_id: Res<CurrentClientId>,
     mut client: ResMut<RenetClient>,
     mut lobby: ResMut<ClientLobby>,
+    mut player_mapping: ResMut<PlayerMapping>,
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<ColorMaterial>>,
-    mut player_mapping: ResMut<PlayerMapping>,
 ) {
-    let current_client_id = client_id.0;
-
-    while let Some(message) = client.receive_message(ServerChannel::ServerMessages) {
-        let (server_message, _size) = deserialize_server_message(&message);
-        match server_message {
+    while let Some(event) = client.receive_message(ServerChannel::ServerMessages) {
+        match deserialize_server_message(&event).0 {
             ServerMessages::PlayerCreate {
-                id,
-                translation,
+                client_id,
                 entity,
+                position,
             } => {
-                let player = player_create_handler(
-                    id,
-                    Vec3::from(translation),
-                    entity,
+                info!("Player created: {client_id} at {position:?} with entity {entity}");
+                let player = spawn_player(
+                    &client_id,
+                    position,
                     &mut commands,
                     &mut meshes,
                     &mut materials,
                 );
-                if current_client_id == id {
-                    commands.entity(player).insert(ControlledPlayer);
+
+                if current_client_id.0 == client_id {
+                    commands.entity(entity).insert(ControlledPlayer);
                 }
 
                 lobby.add_player(
-                    &id,
+                    &client_id,
                     PlayerEntities {
-                        server_entity: Entity::from_bits(entity),
+                        server_entity: entity,
                         client_entity: player,
                     },
                 );
-                player_mapping.add(Entity::from_bits(entity), player);
+                player_mapping.add(entity, player);
             }
-            ServerMessages::PlayerRemove { id } => {
-                player_remove_handler(id);
+            ServerMessages::PlayerRemove { client_id } => {
+                info!("Player removed: {client_id}");
+                if let Some(PlayerEntities {
+                    server_entity,
+                    client_entity,
+                }) = lobby.remove_player(&client_id)
+                {
+                    commands.entity(client_entity).despawn();
+                    player_mapping.remove(&server_entity);
+                }
             }
             ServerMessages::Error { message } => {
                 error!("Server error message: {}", message);
             }
         }
     }
-}
-
-fn player_create_handler(
-    id: ClientId,
-    position: Vec3,
-    entity: u64,
-    commands: &mut Commands,
-    meshes: &mut ResMut<Assets<Mesh>>,
-    materials: &mut ResMut<Assets<ColorMaterial>>,
-) -> Entity {
-    info!("Player created: {id} at {position:?} with entity {entity}");
-    commands
-        .spawn((
-            Name::new(format!("Player_{id}")),
-            Transform::from_translation(position),
-            Mesh2d(meshes.add(Mesh::from(Circle::new(40.0)))),
-            MeshMaterial2d(materials.add(ColorMaterial::default())),
-        ))
-        .id()
-}
-
-fn player_remove_handler(id: u64) {
-    info!("Player removed: {id}");
 }

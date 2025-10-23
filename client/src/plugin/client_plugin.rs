@@ -1,30 +1,26 @@
-use bevy::app::{App, Plugin, Update};
-use bevy::prelude::{IntoScheduleConfigs, MessageReader, SystemSet};
-use bevy_renet::client_connected;
+use bevy::prelude::{App, MessageReader, Plugin, Update};
 use bevy_renet::netcode::{
     ClientAuthentication, NetcodeClientPlugin, NetcodeClientTransport, NetcodeTransportError,
 };
 use bevy_renet::renet::RenetClient;
-use client::resource::CurrentClientId;
-use client::system::client_event::client_event_system;
-use game_core::network::{connection_config, get_current_time, get_socket, PROTOCOL_ID};
 
-#[derive(SystemSet, Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub struct Connected;
+use crate::resource::{ClientLobby, CurrentClientId, PlayerMapping};
+use game_core::network::{connection_config, get_current_time, get_socket, PROTOCOL_ID};
 
 pub struct ClientPlugin;
 
 impl Plugin for ClientPlugin {
     fn build(&self, app: &mut App) {
+        app.add_plugins(NetcodeClientPlugin);
+
         build_client_transport(app);
-        app.add_systems(Update, client_event_system.in_set(Connected));
+
+        app.insert_resource(PlayerMapping::default());
+        app.insert_resource(ClientLobby::default());
     }
 }
 
 fn build_client_transport(app: &mut App) {
-    app.add_plugins(NetcodeClientPlugin);
-    app.configure_sets(Update, Connected.run_if(client_connected));
-
     let client = RenetClient::new(connection_config());
 
     let server_addr = "127.0.0.1:5000"

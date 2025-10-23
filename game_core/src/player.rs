@@ -1,4 +1,9 @@
-use bevy::prelude::Component;
+use bevy::asset::Assets;
+use bevy::math::Vec3;
+use bevy::mesh::{Mesh, Mesh2d};
+use bevy::prelude::{
+    Circle, ColorMaterial, Commands, Component, Entity, MeshMaterial2d, Name, ResMut, Transform,
+};
 use bevy_renet::renet::ClientId;
 
 /// Représente un joueur connecté au serveur.
@@ -18,3 +23,20 @@ pub struct PlayerInfo {
 /// Composant "tag" sans données.
 #[derive(Component)]
 pub struct ControlledPlayer;
+
+pub fn spawn_player(
+    client_id: &ClientId,
+    position: Vec3,
+    commands: &mut Commands,
+    meshes: &mut ResMut<Assets<Mesh>>,
+    materials: &mut ResMut<Assets<ColorMaterial>>,
+) -> Entity {
+    commands
+        .spawn((
+            Name::new(format!("Player_{client_id}")),
+            Transform::from_translation(position),
+            Mesh2d(meshes.add(Mesh::from(Circle::new(40.0)))),
+            MeshMaterial2d(materials.add(ColorMaterial::default())),
+        ))
+        .id()
+}
