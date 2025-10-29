@@ -7,38 +7,12 @@ use std::time::Duration;
 ///
 /// - `ServerMessages` : messages serveur généraux (notifications, états de connexion).
 /// - `NetworkedEntities` : mises à jour de l'état des entités réseau (positions, snapshots).
+#[derive(Debug, Serialize, Deserialize, Component)]
 pub enum ServerChannel {
     /// Messages généraux du serveur.
     ServerMessages,
     /// Mises à jour des entités synchronisées.
     NetworkedEntities,
-}
-
-/// Messages envoyés par le serveur aux clients.
-///
-/// Ces messages sont sérialisés via `serde` et transmis sur les canaux définis
-/// dans `ServerChannel'.
-#[derive(Debug, Serialize, Deserialize, Component)]
-pub enum ServerMessages {
-    /// Crée un joueur côté client.
-    ///
-    /// - `entity` : identifiant de l'entité côté serveur (permets le mapping).
-    /// - `id` : identifiant unique du client ('ClientId').
-    /// - `translation` : position initiale du joueur sous la forme `[x, y, z]'.
-    PlayerCreate {
-        client_id: ClientId,
-        position: Vec3,
-        entity: Entity,
-    },
-    /// Supprime un joueur côté client.
-    ///
-    /// - `id` : identifiant unique du client à retirer.
-    PlayerRemove {
-        client_id: ClientId,
-    },
-    Error {
-        message: String,
-    },
 }
 
 impl From<ServerChannel> for u8 {
@@ -79,4 +53,26 @@ impl ServerChannel {
             },
         ]
     }
+}
+
+/// Messages envoyés par le serveur aux clients.
+///
+/// Ces messages sont sérialisés via `serde` et transmis sur les canaux définis
+/// dans `ServerChannel'.
+#[derive(Debug, Serialize, Deserialize, Component)]
+pub enum ServerMessages {
+    /// Crée un joueur côté client.
+    ///
+    /// - `entity` : identifiant de l'entité côté serveur (permets le mapping).
+    /// - `id` : identifiant unique du client ('ClientId').
+    /// - `translation` : position initiale du joueur sous la forme `[x, y, z]'.
+    PlayerCreate {
+        client_id: ClientId,
+        position: Vec3,
+        entity: Entity,
+    },
+    /// Supprime un joueur côté client.
+    ///
+    /// - `id` : identifiant unique du client à retirer.
+    PlayerRemove { client_id: ClientId },
 }

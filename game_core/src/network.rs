@@ -74,38 +74,39 @@ pub fn get_socket(socket_address: SocketAddr) -> UdpSocket {
     }
 }
 
-/// Désérialise un message serveur encodé en bincode.
+/// Désérialise un message encodé en bincode en un type générique `T`.
 ///
 /// # Paramètres
 /// - `message` : tranche d'octets contenant le message sérialisé.
 ///
 /// # Retour
-/// - `(ServerMessages, usize)` : le message décodé et le nombre d'octets consommés.
-///   En cas d'échec de la désérialisation, la fonction :
-///   - journalise l'erreur via `bevy::log::error`,
-///   - retourne `ServerMessages::Error { message }` contenant le texte de l'erreur,
-///   - et `0` comme nombre d'octets consommés.
-pub fn deserialize_server_message(message: &[u8]) -> (ServerMessages, usize) {
-    bincode::serde::decode_from_slice(message, bincode::config::standard()).unwrap_or_else(|err| {
-        error!("Deserialization error: {:?}", err);
-        (
-            ServerMessages::Error {
-                message: err.to_string(),
-            },
-            0,
-        )
-    })
+/// - `Result<T, bincode::error::DecodeError>` :
+///   - Ok(value) : valeur désérialisée.
+///   - Err(err) : erreur de désérialisation ; l'erreur est journalisée via `bevy::log::error`.
+///
+/// Utilise `bincode::serde::decode_from_slice`. Le nombre d'octets consommés par la
+/// désérialisation est ignoré et seule la valeur est retournée.
+pub fn deserialize_server_message<T>(message: &[u8]) -> Result<T, bincode::error::DecodeError>
+where
+    T: serde::de::DeserializeOwned,
+{
+    bincode::serde::decode_from_slice(message, bincode::config::standard())
+        .map(|(val, _)| val)
+        .map_err(|err| {
+            error!("Deserialization error: {:?}", err);
+            err
+        })
 }
 
-/// Sérialise un `ServerMessages` en `Vec<u8>` au format bincode.
+/// Sérialise un message serveur en bincode.
 ///
 /// # Paramètres
-/// - `message` : référence vers le message serveur à sérialiser.
+/// - `message`: référence vers la valeur sérialisable (implémente `Serialize`).
 ///
 /// # Retour
-/// - `Vec<u8>` : octets sérialisés. En cas d'échec, la fonction journalise l'erreur
-///   via `bevy::log::error` et retourne un vecteur vide.
-pub fn serialize_server_message(message: &ServerMessages) -> Vec<u8> {
+/// - `Vec<u8>`: octets sérialisés. En cas d'échec, l'erreur est journalisée et `Vec::new()` est renvoyé.
+/// - Utilise `bincode::serde::encode_to_vec` avec la configuration standard.
+pub fn serialize_server_message<T: Serialize>(message: &T) -> Vec<u8> {
     bincode::serde::encode_to_vec(message, bincode::config::standard()).unwrap_or_else(|err| {
         error!("Serialization error: {:?}", err);
         Vec::new()

@@ -2,7 +2,7 @@ use bevy::asset::Assets;
 use bevy::math::Vec3;
 use bevy::mesh::{Mesh, Mesh2d};
 use bevy::prelude::{
-    Circle, ColorMaterial, Commands, Component, Entity, MeshMaterial2d, Name, ResMut, Transform,
+    Circle, ColorMaterial, Commands, Component, Entity, MeshMaterial2d, ResMut, Transform,
 };
 use bevy_renet::renet::ClientId;
 
@@ -33,10 +33,13 @@ pub fn spawn_player(
 ) -> Entity {
     commands
         .spawn((
-            Name::new(format!("Player_{client_id}")),
             Transform::from_translation(position),
             Mesh2d(meshes.add(Mesh::from(Circle::new(40.0)))),
             MeshMaterial2d(materials.add(ColorMaterial::default())),
+            PlayerInfo {
+                id: *client_id,
+                name: format!("Player_{client_id}"),
+            },
         ))
         .id()
 }

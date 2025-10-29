@@ -1,11 +1,13 @@
 use crate::resource::ServerLobby;
-use bevy::prelude::{info, MessageReader, ResMut};
-use bevy_renet::renet::RenetServer;
+use bevy::prelude::{info, Entity, MessageReader, Query, ResMut, Transform};
+use bevy_renet::renet::{ClientId, RenetServer};
 use game_core::event::game_event::GameEvent;
 use game_core::network::serialize_server_message;
+use game_core::player::PlayerInfo;
 use game_core::server::{ServerChannel, ServerMessages};
 
 pub fn on_server_event(
+    mut players: Query<(Entity, &PlayerInfo, &Transform)>,
     mut server: ResMut<RenetServer>,
     mut lobby: ResMut<ServerLobby>,
     mut game_event_reader: MessageReader<GameEvent>,
@@ -23,15 +25,17 @@ pub fn on_server_event(
                 );
                 lobby.add_player(client_id, *entity);
 
-                send_server_message_to_client(
-                    client_id,
-                    &ServerMessages::PlayerCreate {
-                        client_id: *client_id,
-                        position: *position,
-                        entity: *entity,
-                    },
-                    &mut server,
-                );
+                for (entity, player_info, transform) in players.iter_mut() {
+                    send_server_message_to_client(
+                        client_id,
+                        &ServerMessages::PlayerCreate {
+                            client_id: player_info.id,
+                            position: transform.translation,
+                            entity,
+                        },
+                        &mut server,
+                    );
+                }
 
                 broadcast_server_message(
                     &mut server,
@@ -63,7 +67,7 @@ fn broadcast_server_message(server: &mut ResMut<RenetServer>, server_message: &S
 }
 
 fn send_server_message_to_client(
-    client_id: &u64,
+    client_id: &ClientId,
     server_message: &ServerMessages,
     server: &mut ResMut<RenetServer>,
 ) {
