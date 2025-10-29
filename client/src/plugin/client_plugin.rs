@@ -4,7 +4,7 @@ use bevy_renet::netcode::{
 };
 use bevy_renet::renet::RenetClient;
 
-use crate::resource::{ClientLobby, CurrentClientId, PlayerMapping};
+use crate::resource::{ClientLobby, CurrentClientId};
 use game_core::network::{connection_config, get_current_time, get_socket, PROTOCOL_ID};
 
 pub struct ClientPlugin;
@@ -15,7 +15,6 @@ impl Plugin for ClientPlugin {
 
         build_client_transport(app);
 
-        app.insert_resource(PlayerMapping::default());
         app.insert_resource(ClientLobby::default());
     }
 }

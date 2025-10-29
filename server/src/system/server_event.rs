@@ -61,12 +61,12 @@ pub fn on_server_event(
                 );
             }
             ServerEvent::ClientDisconnected { client_id, .. } => {
-                info!("PlayerRemoved {:?}", client_id);
-                lobby.remove_player(client_id);
-
                 info!("Client {client_id} disconnected");
+
                 if let Some(entity) = lobby.get_player(client_id) {
                     commands.entity(*entity).despawn();
+                    lobby.remove_player(client_id);
+                    info!("PlayerRemoved {:?}", client_id);
                 }
 
                 broadcast_server_message(

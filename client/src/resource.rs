@@ -1,7 +1,16 @@
 use bevy::prelude::{Entity, Resource};
 use bevy_renet::renet::ClientId;
-use game_core::client::PlayerEntities;
 use std::collections::HashMap;
+
+/// Informations liant l'entité côté client à l'entité correspondante côté serveur.
+///
+/// - `client_entity` : entité locale représentant le joueur dans le client.
+/// - `server_entity` : entité correspondante telle qu'identifiée par le serveur.
+#[derive(Debug)]
+pub struct PlayerEntities {
+    pub client_entity: Entity,
+    pub server_entity: Entity,
+}
 
 /// Représente l'état du lobby côté client.
 ///
@@ -37,6 +46,32 @@ impl ClientLobby {
     pub fn get_player_entities(&self, client_id: &ClientId) -> Option<&PlayerEntities> {
         self.players.get(client_id)
     }
+
+    /// Retourne la paire `(ClientId, PlayerEntities)` correspondant à une
+    /// `server_entity` donnée, si elle est présente dans le lobby client.
+    ///
+    /// Recherche linéaire sur la table `players` : complexité O(n).
+    ///
+    /// # Arguments
+    ///
+    /// * `server_entity` - Référence à l'entité côté serveur à chercher.
+    ///
+    /// # Retour
+    ///
+    /// * `Some((&ClientId, &PlayerEntities))` si une entrée avec
+    ///   `entities.server_entity == *server_entity` est trouvée, sinon `None`.
+    pub fn get_player_by_server_entity(
+        &self,
+        server_entity: &Entity,
+    ) -> Option<(&ClientId, &PlayerEntities)> {
+        self.players.iter().find_map(|(client_id, entities)| {
+            if &entities.server_entity == server_entity {
+                Some((client_id, entities))
+            } else {
+                None
+            }
+        })
+    }
 }
 
 /// Identifiant unique du client courant généré localement.
@@ -44,53 +79,3 @@ impl ClientLobby {
 /// Valeur publique pour être facilement accessible depuis les systèmes.
 #[derive(Debug, Resource)]
 pub struct CurrentClientId(pub u64);
-
-/// Mappe les entités côté client aux entités correspondantes côté serveur.
-/// Utile pour synchroniser les états entre le client et le serveur.
-///
-/// Contient une table de hachage où la clé est l'entité côté client
-/// et la valeur est l'entité correspondante côté serveur.
-///
-#[derive(Default, Resource, Debug)]
-pub struct PlayerMapping(pub(crate) HashMap<Entity, Entity>);
-
-impl PlayerMapping {
-    /// Ajoute une correspondance entre une entité client et une entité serveur.
-    ///
-    /// - `client_entity` : entité côté client.
-    /// - `server_entity` : entité correspondante côté serveur.
-    pub fn add(&mut self, client_entity: Entity, server_entity: Entity) {
-        self.0.insert(client_entity, server_entity);
-    }
-
-    /// Récupère l'entité serveur associée à une entité client.
-    ///
-    /// - `client_entity` : entité côté client.
-    /// - Retourne une option contenant l'entité serveur si trouvée.
-    pub fn get_client_entity(&self, client_entity: &Entity) -> Option<&Entity> {
-        self.0.get(client_entity)
-    }
-
-    /// Retourne l'entité client correspondant à une entité serveur donnée.
-    ///
-    /// - `server_entity` : référence à l'entité côté serveur.
-    /// - Retourne `Some(&Entity)` si une correspondance est trouvée, sinon `None`.
-    ///
-    /// Remarque : la recherche parcourt la table de hachage et a une complexité linéaire O(n).
-    pub fn get_server_entity(&self, server_entity: &Entity) -> Option<&Entity> {
-        self.0.iter().find_map(|(client_ent, server_ent)| {
-            if server_ent == server_entity {
-                Some(client_ent)
-            } else {
-                None
-            }
-        })
-    }
-
-    /// Supprime la correspondance pour une entité client donnée.
-    ///
-    /// - `client_entity` : entité côté client à retirer.
-    pub fn remove(&mut self, client_entity: &Entity) {
-        self.0.remove(client_entity);
-    }
-}

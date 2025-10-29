@@ -1,16 +1,5 @@
-use bevy::prelude::Entity;
 use bevy_renet::renet::{ChannelConfig, SendType};
 use std::time::Duration;
-
-/// Informations liant l'entité côté client à l'entité correspondante côté serveur.
-///
-/// - `client_entity` : entité locale représentant le joueur dans le client.
-/// - `server_entity` : entité correspondante telle qu'identifiée par le serveur.
-#[derive(Debug)]
-pub struct PlayerEntities {
-    pub client_entity: Entity,
-    pub server_entity: Entity,
-}
 
 /// Canal utilisé par le client pour envoyer des paquets au serveur.
 ///

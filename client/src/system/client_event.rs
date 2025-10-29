@@ -1,8 +1,7 @@
-use crate::resource::{ClientLobby, CurrentClientId, PlayerMapping};
+use crate::resource::{ClientLobby, CurrentClientId, PlayerEntities};
 use bevy::log::error;
 use bevy::prelude::{info, Assets, ColorMaterial, Commands, Mesh, Res, ResMut};
 use bevy_renet::renet::RenetClient;
-use game_core::client::PlayerEntities;
 use game_core::network::deserialize_server_message;
 use game_core::player::{spawn_player, ControlledPlayer};
 use game_core::server::{ServerChannel, ServerMessages};
@@ -11,7 +10,6 @@ pub fn on_client_event(
     current_client_id: Res<CurrentClientId>,
     mut client: ResMut<RenetClient>,
     mut lobby: ResMut<ClientLobby>,
-    mut player_mapping: ResMut<PlayerMapping>,
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<ColorMaterial>>,
@@ -29,7 +27,7 @@ pub fn on_client_event(
                 entity,
                 position,
             } => {
-                if player_mapping.get_server_entity(&entity).is_none() {
+                if lobby.get_player_by_server_entity(&entity).is_none() {
                     info!("Player created: {client_id} at {position:?} with entity {entity}");
                     let player = spawn_player(
                         &client_id,
@@ -50,19 +48,16 @@ pub fn on_client_event(
                             client_entity: player,
                         },
                     );
-
-                    player_mapping.add(entity, player);
                 }
             }
             ServerMessages::PlayerRemove { client_id } => {
                 info!("Player removed: {client_id}");
                 if let Some(PlayerEntities {
-                    server_entity,
+                    server_entity: _server_entity,
                     client_entity,
                 }) = lobby.remove_player(&client_id)
                 {
                     commands.entity(client_entity).despawn();
-                    player_mapping.remove(&server_entity);
                 }
             }
         }
