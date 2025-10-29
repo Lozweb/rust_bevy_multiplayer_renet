@@ -10,7 +10,7 @@ use std::collections::HashMap;
 #[derive(Debug, Default, Resource)]
 pub struct ClientLobby {
     /// Mappe l'identifiant Renet d'un client aux entités du joueur.
-    players: HashMap<ClientId, PlayerEntities>,
+    pub(crate) players: HashMap<ClientId, PlayerEntities>,
 }
 
 impl ClientLobby {
@@ -51,7 +51,7 @@ pub struct CurrentClientId(pub u64);
 /// Contient une table de hachage où la clé est l'entité côté client
 /// et la valeur est l'entité correspondante côté serveur.
 ///
-#[derive(Default, Resource)]
+#[derive(Default, Resource, Debug)]
 pub struct PlayerMapping(pub(crate) HashMap<Entity, Entity>);
 
 impl PlayerMapping {
@@ -67,8 +67,24 @@ impl PlayerMapping {
     ///
     /// - `client_entity` : entité côté client.
     /// - Retourne une option contenant l'entité serveur si trouvée.
-    pub fn get(&self, client_entity: &Entity) -> Option<&Entity> {
+    pub fn get_client_entity(&self, client_entity: &Entity) -> Option<&Entity> {
         self.0.get(client_entity)
+    }
+
+    /// Retourne l'entité client correspondant à une entité serveur donnée.
+    ///
+    /// - `server_entity` : référence à l'entité côté serveur.
+    /// - Retourne `Some(&Entity)` si une correspondance est trouvée, sinon `None`.
+    ///
+    /// Remarque : la recherche parcourt la table de hachage et a une complexité linéaire O(n).
+    pub fn get_server_entity(&self, server_entity: &Entity) -> Option<&Entity> {
+        self.0.iter().find_map(|(client_ent, server_ent)| {
+            if server_ent == server_entity {
+                Some(client_ent)
+            } else {
+                None
+            }
+        })
     }
 
     /// Supprime la correspondance pour une entité client donnée.

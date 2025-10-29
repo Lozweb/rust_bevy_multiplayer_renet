@@ -1,10 +1,48 @@
 use bevy::asset::Assets;
-use bevy::math::Vec3;
+use bevy::math::{Vec2, Vec3};
 use bevy::mesh::{Mesh, Mesh2d};
 use bevy::prelude::{
-    Circle, ColorMaterial, Commands, Component, Entity, MeshMaterial2d, ResMut, Transform,
+    Circle, ColorMaterial, Commands, Component, Deref, Entity, MeshMaterial2d, ResMut, Resource,
+    Transform,
 };
 use bevy_renet::renet::ClientId;
+use serde::{Deserialize, Serialize};
+
+/// Snapshot des entrées d'un joueur à envoyer/recevoir sur le réseau.
+///
+/// Ce type est sérialisable via `serde` et peut être attaché en tant que
+/// `Component` ou `Resource` selon le besoin (par ex. envoi périodique
+/// d'inputs au serveur ou stockage local).
+///
+/// Champs :
+/// - `up`, `down`, `left`, `right` : directions de mouvement (bool).
+/// - `jump` : action de saut.
+/// - `aim_direction` : direction du visée en radians (f32).
+/// - `shoot` : tir/attaque.
+#[derive(Debug, Default, Clone, Copy, Serialize, Deserialize, Component, Resource)]
+pub struct PlayerInput {
+    pub up: bool,
+    pub down: bool,
+    pub left: bool,
+    pub right: bool,
+    pub jump: bool,
+    pub aim_direction: f32,
+    pub shoot: bool,
+}
+
+/// Resource contenant la direction de visée courante du joueur local.
+///
+/// Valeur en radians. Utilisé pour partager rapidement l'angle entre
+/// systèmes (UI, visée, synchronisation).
+#[derive(Resource, Default)]
+pub struct AimDirection(pub f32);
+
+/// Position de la souris dans l'espace monde.
+///
+/// Contient `None` si la position n'est pas disponible. Le `Deref` permet
+/// d'accéder directement à l'`Option<Vec2>` lorsque la ressource est récupérée.
+#[derive(Resource, Debug, Default, Deref)]
+pub struct MouseWorldCoords(pub Option<Vec2>);
 
 /// Représente un joueur connecté au serveur.
 ///

@@ -3,11 +3,11 @@ use bevy::log::error;
 use bevy::prelude::{info, Assets, ColorMaterial, Commands, Mesh, Res, ResMut};
 use bevy_renet::renet::RenetClient;
 use game_core::client::PlayerEntities;
-use game_core::network::{deserialize_server_message, NetworkedEntities};
+use game_core::network::deserialize_server_message;
 use game_core::player::{spawn_player, ControlledPlayer};
 use game_core::server::{ServerChannel, ServerMessages};
 
-pub fn on_server_event(
+pub fn on_client_event(
     current_client_id: Res<CurrentClientId>,
     mut client: ResMut<RenetClient>,
     mut lobby: ResMut<ClientLobby>,
@@ -29,27 +29,30 @@ pub fn on_server_event(
                 entity,
                 position,
             } => {
-                info!("Player created: {client_id} at {position:?} with entity {entity}");
-                let player = spawn_player(
-                    &client_id,
-                    position,
-                    &mut commands,
-                    &mut meshes,
-                    &mut materials,
-                );
+                if player_mapping.get_server_entity(&entity).is_none() {
+                    info!("Player created: {client_id} at {position:?} with entity {entity}");
+                    let player = spawn_player(
+                        &client_id,
+                        position,
+                        &mut commands,
+                        &mut meshes,
+                        &mut materials,
+                    );
 
-                if current_client_id.0 == client_id {
-                    commands.entity(entity).insert(ControlledPlayer);
+                    if current_client_id.0 == client_id {
+                        commands.entity(player).insert(ControlledPlayer);
+                    }
+
+                    lobby.add_player(
+                        &client_id,
+                        PlayerEntities {
+                            server_entity: entity,
+                            client_entity: player,
+                        },
+                    );
+
+                    player_mapping.add(entity, player);
                 }
-
-                lobby.add_player(
-                    &client_id,
-                    PlayerEntities {
-                        server_entity: entity,
-                        client_entity: player,
-                    },
-                );
-                player_mapping.add(entity, player);
             }
             ServerMessages::PlayerRemove { client_id } => {
                 info!("Player removed: {client_id}");

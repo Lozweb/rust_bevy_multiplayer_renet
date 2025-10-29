@@ -1,5 +1,5 @@
 use crate::client::ClientChannel;
-use crate::server::{ServerChannel, ServerMessages};
+use crate::server::ServerChannel;
 use bevy::log::error;
 use bevy_renet::renet::ConnectionConfig;
 use serde::{Deserialize, Serialize};

@@ -1,29 +1,43 @@
 use crate::resource::ServerLobby;
-use bevy::prelude::{info, Entity, MessageReader, Query, ResMut, Transform};
-use bevy_renet::renet::{ClientId, RenetServer};
-use game_core::event::game_event::GameEvent;
+use bevy::asset::Assets;
+use bevy::math::Vec3;
+use bevy::mesh::Mesh;
+use bevy::prelude::{
+    info, ColorMaterial, Commands, Entity, MessageReader, Query, ResMut, Transform,
+};
+use bevy_renet::renet::{ClientId, RenetServer, ServerEvent};
 use game_core::network::serialize_server_message;
-use game_core::player::PlayerInfo;
+use game_core::player::{spawn_player, PlayerInfo};
 use game_core::server::{ServerChannel, ServerMessages};
 
 pub fn on_server_event(
     mut players: Query<(Entity, &PlayerInfo, &Transform)>,
     mut server: ResMut<RenetServer>,
     mut lobby: ResMut<ServerLobby>,
-    mut game_event_reader: MessageReader<GameEvent>,
+    mut server_event_reader: MessageReader<ServerEvent>,
+    mut commands: Commands,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut materials: ResMut<Assets<ColorMaterial>>,
 ) {
-    for event in game_event_reader.read() {
+    for event in server_event_reader.read() {
         match event {
-            GameEvent::PlayerCreated {
-                client_id,
-                entity,
-                position,
-            } => {
+            ServerEvent::ClientConnected { client_id } => {
+                let position = Vec3::new(fastrand::f32() * 800.0 - 400.0, 0.0, 0.0);
+
+                let entity = spawn_player(
+                    client_id,
+                    position,
+                    &mut commands,
+                    &mut meshes,
+                    &mut materials,
+                );
+
+                lobby.add_player(client_id, entity);
+
                 info!(
                     "PlayerCreated {:?} {:?} at position : {:?}",
                     client_id, entity, position
                 );
-                lobby.add_player(client_id, *entity);
 
                 for (entity, player_info, transform) in players.iter_mut() {
                     send_server_message_to_client(
@@ -38,30 +52,35 @@ pub fn on_server_event(
                 }
 
                 broadcast_server_message(
-                    &mut server,
                     &ServerMessages::PlayerCreate {
                         client_id: *client_id,
-                        position: *position,
-                        entity: *entity,
+                        position,
+                        entity,
                     },
+                    &mut server,
                 );
             }
-            GameEvent::PlayerRemoved { client_id } => {
+            ServerEvent::ClientDisconnected { client_id, .. } => {
                 info!("PlayerRemoved {:?}", client_id);
                 lobby.remove_player(client_id);
 
+                info!("Client {client_id} disconnected");
+                if let Some(entity) = lobby.get_player(client_id) {
+                    commands.entity(*entity).despawn();
+                }
+
                 broadcast_server_message(
-                    &mut server,
                     &ServerMessages::PlayerRemove {
                         client_id: *client_id,
                     },
+                    &mut server,
                 );
             }
         }
     }
 }
 
-fn broadcast_server_message(server: &mut ResMut<RenetServer>, server_message: &ServerMessages) {
+fn broadcast_server_message(server_message: &ServerMessages, server: &mut ResMut<RenetServer>) {
     let message = serialize_server_message(server_message);
     server.broadcast_message(ServerChannel::ServerMessages, message);
 }

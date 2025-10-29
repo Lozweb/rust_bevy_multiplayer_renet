@@ -9,6 +9,7 @@ use bevy_inspector_egui::quick::WorldInspectorPlugin;
 use bevy_renet::RenetClientPlugin;
 use client::plugin::client_plugin::ClientPlugin;
 use client::plugin::game_plugin::GamePlugin;
+use client::plugin::input_plugin::InputPlugin;
 use client::system::camera::spawn_camera;
 
 fn main() {
@@ -37,8 +38,8 @@ fn main() {
     app.add_plugins(EguiPlugin::default());
     app.add_plugins(WorldInspectorPlugin::new());
     app.add_plugins(RenetClientPlugin);
-    app.add_plugins(ClientPlugin);
-    app.add_plugins(GamePlugin);
+
+    app.add_plugins((ClientPlugin, GamePlugin, InputPlugin));
 
     app.add_systems(Startup, spawn_camera);
 
