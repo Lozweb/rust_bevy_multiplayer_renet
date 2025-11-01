@@ -1,56 +1,29 @@
-use bevy_renet::renet::{ChannelConfig, SendType};
-use std::time::Duration;
+use crate::player::PlayerInput;
+use bevy::prelude::Component;
+use bincode::error::DecodeError;
+use serde::{Deserialize, Serialize};
 
-/// Canal utilisé par le client pour envoyer des paquets au serveur.
+/// Représente un message envoyé par le client au serveur.
 ///
-/// - `Input` : envoie les entrées du joueur (contrôles, mouvements) à haute fréquence.
-/// - `Command` : envoie des commandes ponctuelles (ex : chat, actions, requêtes).
-pub enum ClientChannel {
-    /// Entrées de contrôle du joueur.
-    Input,
-    /// Commandes ponctuelles et requêtes.
-    Command,
+/// Variantes :
+/// - `Input(PlayerInput)` : transmet les entrées du joueur.
+/// - `Command(String)` : envoie une commande texte.
+/// - `ErrorMessage { reason: String }` : signale une erreur avec une raison.
+#[derive(Debug, Serialize, Deserialize, Component)]
+pub enum ClientMessage {
+    Input(PlayerInput),
+    Command(String),
+    ErrorMessage { reason: String },
 }
 
-/// Conversion de `ClientChannel` en identifiant numérique (`u8`).
-///
-/// Mapping explicite utilisé pour communiquer avec l'API réseau :
-/// - `Command` -> 0
-/// - `Input` -> 1
-impl From<ClientChannel> for u8 {
-    fn from(channel_id: ClientChannel) -> Self {
-        match channel_id {
-            ClientChannel::Command => 0,
-            ClientChannel::Input => 1,
+/// Implémentation du trait `DeserializeErrorFallback` pour `ClientMessage`.
+/// Cette méthode permet de créer un message d'erreur structuré lorsque la
+/// désérialisation d'un message client échoue, en encapsulant la raison
+/// de l'échec dans la variante `ErrorMessage`.
+impl crate::network::DeserializeErrorFallback for ClientMessage {
+    fn deserialize_error(err: DecodeError) -> Self {
+        ClientMessage::ErrorMessage {
+            reason: format!("Failed to deserialize ClientMessage: {}", err),
         }
-    }
-}
-
-/// Fournit la configuration des canaux côté client.
-///
-/// Canaux :
-/// - `Input` : envoie des entrées du joueur à haute fréquence. Configuré en `ReliableOrdered`
-///   avec `resend_time = Duration::ZERO` pour faible latence et ordre garanti.
-/// - `Command` : envoie des commandes ponctuelles (chat, actions). Également `ReliableOrdered'.
-///
-/// Les tailles mémoire sont plafonnées à 5 MiB par canal.
-impl ClientChannel {
-    pub fn channel_config() -> Vec<ChannelConfig> {
-        vec![
-            ChannelConfig {
-                channel_id: Self::Input.into(),
-                max_memory_usage_bytes: 5 * 1024 * 1024,
-                send_type: SendType::ReliableOrdered {
-                    resend_time: Duration::ZERO,
-                },
-            },
-            ChannelConfig {
-                channel_id: Self::Command.into(),
-                max_memory_usage_bytes: 5 * 1024 * 1024,
-                send_type: SendType::ReliableOrdered {
-                    resend_time: Duration::ZERO,
-                },
-            },
-        ]
     }
 }

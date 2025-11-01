@@ -2,9 +2,9 @@ use crate::resource::{ClientLobby, CurrentClientId, PlayerEntities};
 use bevy::log::error;
 use bevy::prelude::{info, Assets, ColorMaterial, Commands, Mesh, Res, ResMut};
 use bevy_renet::renet::RenetClient;
-use game_core::network::deserialize_server_message;
+use game_core::network::{MessageDeserialize, ServerChannel};
 use game_core::player::{spawn_player, ControlledPlayer};
-use game_core::server::{ServerChannel, ServerMessages};
+use game_core::server::ServerMessages;
 
 pub fn on_client_event(
     current_client_id: Res<CurrentClientId>,
@@ -15,13 +15,7 @@ pub fn on_client_event(
     mut materials: ResMut<Assets<ColorMaterial>>,
 ) {
     while let Some(event) = client.receive_message(ServerChannel::ServerMessages) {
-        let server_message = deserialize_server_message::<ServerMessages>(&event)
-            .map_err(|e| {
-                error!("Failed to deserialize server message: {:?}", e);
-            })
-            .unwrap();
-
-        match server_message {
+        match ServerMessages::from_bytes(&event) {
             ServerMessages::PlayerCreate {
                 client_id,
                 entity,
@@ -60,16 +54,16 @@ pub fn on_client_event(
                     commands.entity(client_entity).despawn();
                 }
             }
+            ServerMessages::ErrorMessage { reason } => {
+                error!("{}", reason);
+            }
         }
     }
 }
 
 pub fn server_network_sync(mut client: ResMut<RenetClient>) {
     while let Some(event) = client.receive_message(ServerChannel::NetworkedEntities) {
-        let networkedentities = deserialize_server_message::<ServerChannel>(&event)
-            .map_err(|e| {
-                error!("Failed to deserialize networked entities: {:?}", e);
-            })
-            .unwrap();
+        ServerMessages::from_bytes(&event);
+        { /* Ignore other messages */ }
     }
 }

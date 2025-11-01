@@ -1,8 +1,8 @@
 use bevy::input::ButtonInput;
 use bevy::prelude::{KeyCode, MouseButton, Res, ResMut};
 use bevy_renet::renet::RenetClient;
-use game_core::client::ClientChannel;
-use game_core::network::serialize_server_message;
+use game_core::client::ClientMessage;
+use game_core::network::{ClientChannel, MessageSerialize};
 use game_core::player::PlayerInput;
 
 const UP: [KeyCode; 2] = [KeyCode::KeyW, KeyCode::ArrowUp];
@@ -25,6 +25,8 @@ pub fn input_sync_system(
     player_input.jump = keyboard_input.just_pressed(JUMP);
     player_input.shoot = mouse_input.just_pressed(SHOOT);
 
-    let message = serialize_server_message(&*player_input);
-    client.send_message(ClientChannel::Input, message);
+    client.send_message(
+        ClientChannel::Input,
+        ClientMessage::to_bytes(&ClientMessage::Input(player_input.clone())),
+    );
 }

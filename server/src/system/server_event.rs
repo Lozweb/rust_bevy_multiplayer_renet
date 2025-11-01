@@ -5,10 +5,9 @@ use bevy::mesh::Mesh;
 use bevy::prelude::{
     info, ColorMaterial, Commands, Entity, MessageReader, Query, ResMut, Transform,
 };
-use bevy_renet::renet::{ClientId, RenetServer, ServerEvent};
-use game_core::network::serialize_server_message;
+use bevy_renet::renet::{RenetServer, ServerEvent};
 use game_core::player::{spawn_player, PlayerInfo};
-use game_core::server::{ServerChannel, ServerMessages};
+use game_core::server::ServerMessages;
 
 pub fn on_server_event(
     mut players: Query<(Entity, &PlayerInfo, &Transform)>,
@@ -40,7 +39,7 @@ pub fn on_server_event(
                 );
 
                 for (entity, player_info, transform) in players.iter_mut() {
-                    send_server_message_to_client(
+                    ServerMessages::send(
                         client_id,
                         &ServerMessages::PlayerCreate {
                             client_id: player_info.id,
@@ -51,7 +50,7 @@ pub fn on_server_event(
                     );
                 }
 
-                broadcast_server_message(
+                ServerMessages::broadcast(
                     &ServerMessages::PlayerCreate {
                         client_id: *client_id,
                         position,
@@ -69,7 +68,7 @@ pub fn on_server_event(
                     info!("PlayerRemoved {:?}", client_id);
                 }
 
-                broadcast_server_message(
+                ServerMessages::broadcast(
                     &ServerMessages::PlayerRemove {
                         client_id: *client_id,
                     },
@@ -78,18 +77,4 @@ pub fn on_server_event(
             }
         }
     }
-}
-
-fn broadcast_server_message(server_message: &ServerMessages, server: &mut ResMut<RenetServer>) {
-    let message = serialize_server_message(server_message);
-    server.broadcast_message(ServerChannel::ServerMessages, message);
-}
-
-fn send_server_message_to_client(
-    client_id: &ClientId,
-    server_message: &ServerMessages,
-    server: &mut ResMut<RenetServer>,
-) {
-    let message = serialize_server_message(server_message);
-    server.send_message(*client_id, ServerChannel::ServerMessages, message);
 }

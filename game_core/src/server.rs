@@ -1,59 +1,8 @@
-use bevy::prelude::{Component, Entity, Vec3};
-use bevy_renet::renet::{ChannelConfig, ClientId, SendType};
+use crate::network::{MessageSerialize, ServerChannel};
+use bevy::prelude::{Component, Entity, ResMut, Vec3};
+use bevy_renet::renet::{ClientId, RenetServer};
+use bincode::error::DecodeError;
 use serde::{Deserialize, Serialize};
-use std::time::Duration;
-
-/// Canal utilisé par le serveur pour envoyer des paquets au client.
-///
-/// - `ServerMessages` : messages serveur généraux (notifications, états de connexion).
-/// - `NetworkedEntities` : mises à jour de l'état des entités réseau (positions, snapshots).
-#[derive(Debug, Serialize, Deserialize, Component)]
-pub enum ServerChannel {
-    /// Messages généraux du serveur.
-    ServerMessages,
-    /// Mises à jour des entités synchronisées.
-    NetworkedEntities,
-}
-
-impl From<ServerChannel> for u8 {
-    /// Convertit un `ServerChannel` en identifiant de canal ('u8').
-    ///
-    /// Les valeurs retournées sont utilisées par `bevy_renet` pour configurer
-    /// les canaux réseau. Ce mappage doit rester cohérent avec le client.
-    fn from(channel_id: ServerChannel) -> Self {
-        match channel_id {
-            ServerChannel::NetworkedEntities => 0,
-            ServerChannel::ServerMessages => 1,
-        }
-    }
-}
-
-impl ServerChannel {
-    /// Renvoie la configuration des canaux réseau employés par le serveur.
-    ///
-    /// - `NetworkedEntities` : canal non fiable pour les snapshots et mises à jour d'entités.
-    /// - `ServerMessages` : canal fiable et ordonné pour les messages de contrôle
-    ///   (création/suppression de joueurs, notifications).
-    ///
-    /// Les paramètres ('max_memory_usage_bytes', `send_type', `resend_time', ...) peuvent
-    /// être ajustés selon les besoins de performance et de fiabilité.
-    pub fn channel_config() -> Vec<ChannelConfig> {
-        vec![
-            ChannelConfig {
-                channel_id: ServerChannel::NetworkedEntities.into(),
-                max_memory_usage_bytes: 5 * 1024 * 1024,
-                send_type: SendType::Unreliable,
-            },
-            ChannelConfig {
-                channel_id: ServerChannel::ServerMessages.into(),
-                max_memory_usage_bytes: 5 * 1024 * 1024,
-                send_type: SendType::ReliableOrdered {
-                    resend_time: Duration::from_millis(200),
-                },
-            },
-        ]
-    }
-}
 
 /// Messages envoyés par le serveur aux clients.
 ///
@@ -74,5 +23,87 @@ pub enum ServerMessages {
     /// Supprime un joueur côté client.
     ///
     /// - `id` : identifiant unique du client à retirer.
-    PlayerRemove { client_id: ClientId },
+    PlayerRemove {
+        client_id: ClientId,
+    },
+    ErrorMessage {
+        reason: String,
+    },
+}
+
+/// Implémentation du trait `DeserializeErrorFallback` pour `ServerMessages`.
+///
+/// Cette implémentation permet de gérer les erreurs de désérialisation.
+/// Lorsqu'une erreur de décodage survient lors de la réception d'un message du serveur,
+/// un message `ErrorMessage` est généré avec la raison de l'échec.
+///
+/// # Arguments
+///
+/// * `err` - L'erreur de décodage rencontrée lors de la désérialisation.
+///
+/// # Retour
+///
+/// Retourne une variante `ErrorMessage` contenant la description de l'erreur.
+impl crate::network::DeserializeErrorFallback for ServerMessages {
+    fn deserialize_error(err: DecodeError) -> Self {
+        ServerMessages::ErrorMessage {
+            reason: format!("Failed to deserialize ServerMessages: {}", err),
+        }
+    }
+}
+
+impl ServerMessages {
+    /// Diffuse un message à tous les clients connectés.
+    ///
+    /// # Arguments
+    ///
+    /// * `server_message` - Référence vers le message à envoyer à tous les clients.
+    /// * `server` - Référence mutable vers le serveur Renet.
+    ///
+    /// Le message est sérialisé et envoyé sur le canal `ServerMessages` à tous les clients.
+    pub fn broadcast(server_message: &ServerMessages, server: &mut ResMut<RenetServer>) {
+        server.broadcast_message(
+            ServerChannel::ServerMessages,
+            ServerMessages::to_bytes(server_message),
+        );
+    }
+
+    /// Envoie un message du serveur à un client spécifique.
+    ///
+    /// # Arguments
+    ///
+    /// * `client_id` - Identifiant du client destinataire.
+    /// * `server_message` - Message à envoyer.
+    /// * `server` - Référence mutable vers le serveur Renet.
+    ///
+    /// Le message est sérialisé et envoyé sur le canal `ServerMessages`.
+    pub fn send(
+        client_id: &ClientId,
+        server_message: &ServerMessages,
+        server: &mut ResMut<RenetServer>,
+    ) {
+        server.send_message(
+            *client_id,
+            ServerChannel::ServerMessages,
+            ServerMessages::to_bytes(server_message),
+        );
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize, Default)]
+/// Représente un snapshot des entités synchronisées et leurs positions.
+///
+/// Cette structure contient deux vecteurs parallèles :
+/// - `entities` : identifiants uniques des entités côté serveur ('u64').
+/// - `translations` : positions sous la forme `[x, y, z]` pour chaque entité.
+///
+/// Contrat : les deux vecteurs doivent avoir la même longueur. L'élément à l'index `i`
+/// dans `entities` correspond à la position à l'index `i` dans `translations'.
+///
+/// Sérialisée via `serde` pour être envoyée sur le canal `NetworkedEntities'.
+pub struct NetworkedEntities {
+    /// Identifiants des entités côté serveur.
+    pub entities: Vec<u64>,
+    /// Positions des entités : `[x, y, z]`.
+    pub translations: Vec<[f32; 3]>,
 }
