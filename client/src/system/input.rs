@@ -27,6 +27,6 @@ pub fn input_sync_system(
 
     client.send_message(
         ClientChannel::Input,
-        ClientMessage::to_bytes(&ClientMessage::Input(player_input.clone())),
+        ClientMessage::to_bytes(&ClientMessage::Input(*player_input)),
     );
 }

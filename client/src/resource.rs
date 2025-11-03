@@ -78,4 +78,4 @@ impl ClientLobby {
 ///
 /// Valeur publique pour être facilement accessible depuis les systèmes.
 #[derive(Debug, Resource)]
-pub struct CurrentClientId(pub u64);
+pub struct CurrentClientId(pub ClientId);

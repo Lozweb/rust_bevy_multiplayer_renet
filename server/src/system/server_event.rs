@@ -9,6 +9,7 @@ use bevy_renet::renet::{RenetServer, ServerEvent};
 use game_core::player::{spawn_player, PlayerInfo};
 use game_core::server::ServerMessages;
 
+#[allow(dead_code)]
 pub fn on_server_event(
     mut players: Query<(Entity, &PlayerInfo, &Transform)>,
     mut server: ResMut<RenetServer>,

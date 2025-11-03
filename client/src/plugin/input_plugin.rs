@@ -1,4 +1,4 @@
-use crate::plugin::game_plugin::Connected;
+use crate::plugin::client_plugin::Connected;
 use crate::system::input::input_sync_system;
 use bevy::prelude::{App, IntoScheduleConfigs, Plugin, Update};
 use bevy_renet::client_connected;
