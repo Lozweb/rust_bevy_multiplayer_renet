@@ -25,7 +25,7 @@ pub enum DebugMode {
 /// `entries` contient les entrées du log.
 /// `max_entries` limite le nombre d'entrées conservées (FIFO).
 #[derive(Resource, Default)]
-pub struct MessageLog {
+pub struct Log {
     pub entries: Vec<LogEntry>,
     pub max_entries: usize,
 }
@@ -64,7 +64,7 @@ pub enum MessageDirection {
     Received,
 }
 
-impl MessageLog {
+impl Log {
     /// Crée un nouveau journal de messages avec une capacité maximale.
     pub fn new(max_entries: usize) -> Self {
         Self {

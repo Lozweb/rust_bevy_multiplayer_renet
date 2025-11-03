@@ -6,7 +6,7 @@ use bevy::prelude::{
     info, ColorMaterial, Commands, Entity, MessageReader, Query, ResMut, Transform,
 };
 use bevy_renet::renet::{RenetServer, ServerEvent};
-use game_core::debug_state::MessageLog;
+use game_core::debug_state::Log;
 use game_core::player::{spawn_player, PlayerInfo};
 use game_core::server::ServerMessages;
 
@@ -15,7 +15,7 @@ pub fn on_server_event(
     mut players: Query<(Entity, &PlayerInfo, &Transform)>,
     mut server: ResMut<RenetServer>,
     mut lobby: ResMut<ServerLobby>,
-    mut log: ResMut<MessageLog>,
+    mut log: ResMut<Log>,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<ColorMaterial>>,
     mut server_event_reader: MessageReader<ServerEvent>,

@@ -1,6 +1,6 @@
 use bevy::input::mouse::{MouseScrollUnit, MouseWheel};
 use bevy::prelude::*;
-use game_core::debug_state::{MessageDirection, MessageLog};
+use game_core::debug_state::{Log, MessageDirection};
 use log::info;
 
 #[derive(Component)]
@@ -51,10 +51,7 @@ pub fn setup_console_ui(mut commands: Commands) {
         });
 }
 
-pub fn update_console_display(
-    log: Res<MessageLog>,
-    mut console: Query<&mut Text, With<ConsoleContent>>,
-) {
+pub fn update_console_display(log: Res<Log>, mut console: Query<&mut Text, With<ConsoleContent>>) {
     if !log.is_changed() {
         return;
     }
@@ -98,7 +95,7 @@ pub fn auto_scroll_console(
     }
 }
 
-pub fn handle_console_input(keyboard: Res<ButtonInput<KeyCode>>, mut log: ResMut<MessageLog>) {
+pub fn handle_console_input(keyboard: Res<ButtonInput<KeyCode>>, mut log: ResMut<Log>) {
     if keyboard.just_pressed(KeyCode::KeyC) {
         log.clear();
         info!("Console cleared");

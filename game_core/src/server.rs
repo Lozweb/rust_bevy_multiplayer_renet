@@ -1,4 +1,4 @@
-use crate::debug_state::{MessageDirection, MessageLog};
+use crate::debug_state::{Log, MessageDirection};
 use crate::network::{MessageSerialize, ServerChannel};
 use bevy::prelude::{Component, Entity, ResMut, Vec3};
 use bevy_renet::renet::{ClientId, RenetServer};
@@ -66,7 +66,7 @@ impl ServerMessages {
     pub fn broadcast(
         server_message: &ServerMessages,
         server: &mut ResMut<RenetServer>,
-        log: &mut ResMut<MessageLog>,
+        log: &mut ResMut<Log>,
     ) {
         server.broadcast_message(
             ServerChannel::ServerMessages,
@@ -93,7 +93,7 @@ impl ServerMessages {
         client_id: &ClientId,
         server_message: &ServerMessages,
         server: &mut ResMut<RenetServer>,
-        log: &mut ResMut<MessageLog>,
+        log: &mut ResMut<Log>,
     ) {
         server.send_message(
             *client_id,
@@ -113,7 +113,7 @@ impl ServerMessages {
     ///
     /// * `client_id` - Identifiant du client qui vient de se connecter.
     /// * `log` - Référence mutable vers le journal des messages.
-    pub fn client_logon(client_id: &ClientId, log: &mut ResMut<MessageLog>) {
+    pub fn client_logon(client_id: &ClientId, log: &mut ResMut<Log>) {
         log.add(
             "ServerMessages".to_string(),
             MessageDirection::Sent,
@@ -126,7 +126,7 @@ impl ServerMessages {
     ///
     /// * `client_id` - Identifiant du client qui vient de se déconnecter.
     /// * `log` - Référence mutable vers le journal des messages.
-    pub fn client_logoff(client_id: &ClientId, log: &mut ResMut<MessageLog>) {
+    pub fn client_logoff(client_id: &ClientId, log: &mut ResMut<Log>) {
         log.add(
             "ServerMessages".to_string(),
             MessageDirection::Sent,

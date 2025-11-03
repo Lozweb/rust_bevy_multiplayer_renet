@@ -1,4 +1,4 @@
-use game_core::debug_state::{DebugMode, MessageLog};
+use game_core::debug_state::{DebugMode, Log};
 
 use crate::system::debug_camera::{setup_debug_camera, update_debug_camera};
 use crate::ui::console::{
@@ -14,7 +14,7 @@ impl Plugin for DebugPlugin {
     fn build(&self, app: &mut App) {
         app.init_state::<DebugMode>()
             .init_resource::<ConsoleScrollState>()
-            .insert_resource(MessageLog::new(1000))
+            .insert_resource(Log::new(1000))
             .add_systems(Startup, (setup_menu, setup_console_ui, setup_debug_camera))
             .add_systems(
                 Update,
