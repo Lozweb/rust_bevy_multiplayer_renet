@@ -1,6 +1,10 @@
-mod resource;
+mod plugin;
+pub mod resource;
 mod system;
+mod ui;
 
+use crate::plugin::debug_plugin::DebugPlugin;
+use crate::plugin::server_plugin::ServerPlugin;
 use bevy::app::{App, PluginGroup};
 use bevy::asset::AssetPlugin;
 use bevy::prelude::ImagePlugin;
@@ -10,7 +14,6 @@ use bevy::DefaultPlugins;
 use bevy_egui::EguiPlugin;
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
 use bevy_renet::RenetServerPlugin;
-use server::plugin::server_plugin::ServerPlugin;
 
 fn main() {
     let mut app = App::new();
@@ -23,12 +26,13 @@ fn main() {
                 file_path: "../assets".into(),
                 ..default()
             }),
-    );
-
-    app.add_plugins(EguiPlugin::default());
-    app.add_plugins(WorldInspectorPlugin::new());
-    app.add_plugins(RenetServerPlugin);
-    app.add_plugins(ServerPlugin);
-
-    app.run();
+    )
+    .add_plugins((
+        EguiPlugin::default(),
+        WorldInspectorPlugin::new(),
+        RenetServerPlugin,
+        ServerPlugin,
+        DebugPlugin,
+    ))
+    .run();
 }

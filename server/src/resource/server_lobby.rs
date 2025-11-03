@@ -6,7 +6,7 @@ use std::collections::HashMap;
 ///
 /// Contient la table d'association des clients connectés vers leur entité Bevy.
 /// - `players` : mappe chaque `ClientId` (identifiant réseau) à l'Entity` correspondante.
-/// Cette ressource est insérée dans l'App pour suivre les joueurs connectés.
+///   Cette ressource est insérée dans l'App pour suivre les joueurs connectés.
 #[allow(dead_code)]
 #[derive(Debug, Default, Resource)]
 pub struct ServerLobby {

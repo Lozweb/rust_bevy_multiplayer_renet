@@ -1,7 +1,6 @@
-use crate::resource::ServerLobby;
-use crate::system::camera::spawn_camera;
+use crate::resource::server_lobby::ServerLobby;
 use crate::system::server_event::on_server_event;
-use bevy::app::{App, Plugin, Startup, Update};
+use bevy::app::{App, Plugin, Update};
 use bevy_renet::netcode::NetcodeServerPlugin;
 use bevy_renet::renet::RenetServer;
 use game_core::network::connection_config;
@@ -21,6 +20,5 @@ impl Plugin for ServerPlugin {
         app.insert_resource(ServerLobby::default());
 
         app.add_systems(Update, on_server_event);
-        app.add_systems(Startup, spawn_camera);
     }
 }
