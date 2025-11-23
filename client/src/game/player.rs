@@ -5,13 +5,13 @@
 //! du joueur et gérer sa visée avec la souris ou la manette.
 
 use crate::client::input::input_sync_system;
+use crate::client::position_sync::NetworkedTransform;
 use crate::client::Connected;
 use crate::game::camera::MainCamera;
-use crate::{
-    asset_tracking::LoadResource, game::movement::MovementController, AppSystems, PausableSystems,
-};
+use crate::{asset_tracking::LoadResource, AppSystems, PausableSystems};
 use avian2d::prelude::{
-    Collider, CollisionEventsEnabled, DebugRender, LinearVelocity, LockedAxes, RigidBody,
+    Collider, CollisionEventsEnabled, DebugRender, LinearDamping, LinearVelocity, LockedAxes, Mass,
+    RigidBody,
 };
 use bevy::{
     image::{ImageLoaderSettings, ImageSampler},
@@ -19,7 +19,9 @@ use bevy::{
 };
 use bevy_renet::client_connected;
 use bevy_renet::renet::ClientId;
-use game_core::player::{ControlledPlayer, MouseWorldCoords, PlayerInput};
+use game_core::player::{
+    AimDirection, ControlledPlayer, MouseWorldCoords, MovementController, PlayerInfo, PlayerInput,
+};
 
 pub(crate) const UP: [KeyCode; 2] = [KeyCode::KeyW, KeyCode::ArrowUp];
 pub(crate) const DOWN: [KeyCode; 2] = [KeyCode::KeyS, KeyCode::ArrowDown];
@@ -32,18 +34,6 @@ pub(crate) const SHOOT: MouseButton = MouseButton::Left;
 #[derive(Component, Debug, Clone, Copy, Eq, PartialEq, Default, Reflect)]
 #[reflect(Component)]
 pub struct Player;
-
-/// Représente un joueur connecté au serveur.
-///
-/// Contient l'identifiant réseau fourni par `bevy_renet` et le nom affiché.
-#[derive(Debug, Component)]
-pub struct PlayerInfo {
-    /// Identifiant unique du client (fourni par `bevy_renet').
-    pub id: ClientId,
-    /// Nom affiché du joueur.
-    #[allow(dead_code)]
-    pub name: String,
-}
 
 /// Source de la direction de visée.
 ///
@@ -70,14 +60,6 @@ pub struct AimRig {
     pub source: AimSource,
 }
 
-/// Direction de visée du joueur en radians.
-///
-/// Représente l'angle de visée calculé à partir de la position de la souris
-/// par rapport au joueur. L'angle 0 correspond à la droite (axe X positif).
-#[derive(Resource, Component, Debug, Clone, Copy, PartialEq, Default, Reflect)]
-#[reflect(Component)]
-pub struct AimDirection(pub f32);
-
 pub(super) fn plugin(app: &mut App) {
     app.load_resource::<PlayerAssets>();
 
@@ -95,6 +77,38 @@ pub(super) fn plugin(app: &mut App) {
     app.add_systems(Update, input_sync_system.in_set(Connected));
     app.add_systems(Update, mark_local_player.in_set(Connected));
     app.configure_sets(Update, Connected.run_if(client_connected));
+}
+
+/// Bundle regroupant les composants physiques du joueur LOCAL uniquement.
+/// Les joueurs distants n'ont PAS de physique côté client pour éviter la désynchronisation.
+///
+/// IMPORTANT : Utilise RigidBody::Dynamic pour des collisions physiques réelles.
+/// La synchronisation est maintenue par une réconciliation agressive vers la position serveur.
+#[derive(Bundle)]
+struct LocalPlayerPhysicsBundle {
+    rigid_body: RigidBody,
+    collider: Collider,
+    mass: Mass,
+    linear_damping: LinearDamping,
+    linear_velocity: LinearVelocity,
+    locked_axes: LockedAxes,
+    collision_events: CollisionEventsEnabled,
+    debug_render: DebugRender,
+}
+
+impl Default for LocalPlayerPhysicsBundle {
+    fn default() -> Self {
+        Self {
+            rigid_body: RigidBody::Dynamic,
+            collider: Collider::rectangle(32.0, 32.0),
+            mass: Mass(50.0),
+            linear_damping: LinearDamping(1.5), // Réduit de 2.0 pour plus de réactivité
+            linear_velocity: LinearVelocity::ZERO,
+            locked_axes: LockedAxes::ROTATION_LOCKED,
+            collision_events: CollisionEventsEnabled,
+            debug_render: DebugRender::default().with_collider_color(Color::WHITE),
+        }
+    }
 }
 
 /// Crée un bundle complet pour l'entité joueur.
@@ -141,12 +155,8 @@ pub fn player(
             ..default()
         },
         AimDirection::default(),
-        RigidBody::Dynamic,
         Collider::rectangle(32.0, 32.0),
-        LinearVelocity::ZERO,
-        LockedAxes::ROTATION_LOCKED,
-        CollisionEventsEnabled,
-        DebugRender::default().with_collider_color(Color::WHITE),
+        NetworkedTransform::default(),
         children![(
             Name::new("AimRig"),
             Visibility::Inherited,
@@ -188,16 +198,26 @@ pub fn player(
 /// Marque automatiquement le joueur local avec le composant ControlledPlayer.
 ///
 /// Ce système identifie les joueurs qui ont un PlayerInfo.id correspondant au
-/// CurrentClientId et leur ajoute le composant ControlledPlayer s'ils ne l'ont pas déjà.
+/// CurrentClientId et leur ajoute le composant ControlledPlayer ainsi que la physique Dynamic.
+/// Les joueurs distants reçoivent un RigidBody::Static pour pouvoir être poussés par le local.
 fn mark_local_player(
     mut commands: Commands,
     current_client_id: Res<crate::resource::CurrentClientId>,
-    untagged_players: Query<(Entity, &PlayerInfo), (With<Player>, Without<ControlledPlayer>)>,
+    untagged_players: Query<
+        (Entity, &PlayerInfo),
+        (With<Player>, Without<ControlledPlayer>, Without<RigidBody>),
+    >,
 ) {
     for (entity, player_info) in &untagged_players {
         if player_info.id == current_client_id.0 {
             info!("Marking player {} as locally controlled", player_info.id);
-            commands.entity(entity).insert(ControlledPlayer);
+            commands
+                .entity(entity)
+                .insert((ControlledPlayer, LocalPlayerPhysicsBundle::default()));
+        } else {
+            // Joueur distant : RigidBody::Static pour être poussable par le joueur local
+            info!("Marking player {} as remote (static)", player_info.id);
+            commands.entity(entity).insert(RigidBody::Static);
         }
     }
 }

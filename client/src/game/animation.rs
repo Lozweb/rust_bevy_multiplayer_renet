@@ -5,14 +5,11 @@
 //! - [Timers](https://github.com/bevyengine/bevy/blob/latest/examples/time/timers.rs)
 
 use bevy::prelude::*;
+use game_core::player::MovementController;
 use rand::prelude::*;
 use std::time::Duration;
 
-use crate::{
-    audio::sound_effect, game::{movement::MovementController, player::PlayerAssets},
-    AppSystems,
-    PausableSystems,
-};
+use crate::{audio::sound_effect, game::player::PlayerAssets, AppSystems, PausableSystems};
 
 pub(super) fn plugin(app: &mut App) {
     // Animate and play sound effects based on controls.

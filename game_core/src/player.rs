@@ -1,9 +1,11 @@
 use bevy::asset::Assets;
 use bevy::math::{Vec2, Vec3};
 use bevy::mesh::{Mesh, Mesh2d};
+use bevy::prelude::ReflectComponent;
+use bevy::prelude::ReflectResource;
 use bevy::prelude::{
-    Circle, ColorMaterial, Commands, Component, Deref, Entity, MeshMaterial2d, ResMut, Resource,
-    Transform, Visibility,
+    Circle, ColorMaterial, Commands, Component, Deref, Entity, MeshMaterial2d, Reflect, ResMut,
+    Resource, Transform, Visibility,
 };
 use bevy_renet::renet::ClientId;
 use serde::{Deserialize, Serialize};
@@ -27,9 +29,34 @@ pub struct PlayerInput {
     pub shoot: bool,
 }
 
-/// Direction de visée courante du joueur local en radians.
-#[derive(Resource, Default)]
+/// Direction de visée courante en radians.
+#[derive(Component, Resource, Debug, Clone, Copy, PartialEq, Default, Reflect)]
+#[reflect(Component, Resource)]
 pub struct AimDirection(pub f32);
+
+/// Contrôleur de mouvement pour un personnage.
+///
+/// Utilisé côté client et serveur pour gérer le mouvement basé sur les intentions.
+#[derive(Component, Debug, Clone, Reflect)]
+#[reflect(Component)]
+pub struct MovementController {
+    /// Direction de mouvement normalisée (0.0 à 1.0)
+    pub intent: Vec2,
+    /// Direction cible (input du joueur, pour interpolation serveur)
+    pub target_intent: Vec2,
+    /// Vitesse maximale en unités/seconde
+    pub max_speed: f32,
+}
+
+impl Default for MovementController {
+    fn default() -> Self {
+        Self {
+            intent: Vec2::ZERO,
+            target_intent: Vec2::ZERO,
+            max_speed: 400.0,
+        }
+    }
+}
 
 /// Position de la souris dans l'espace monde.
 ///
@@ -83,8 +110,13 @@ pub fn spawn_player(
         },
         RigidBody::Dynamic,
         Collider::rectangle(32.0, 32.0),
+        Mass(50.0),
+        LinearDamping(1.5), // Damping réduit pour plus de réactivité
         LinearVelocity::ZERO,
         LockedAxes::ROTATION_LOCKED,
+        Friction::new(0.1),    // Friction faible pour glissement fluide
+        Restitution::new(0.0), // Pas de rebond sur les collisions
+        ColliderDensity(1.0),  // Densité uniforme
     ));
 
     if let (Some(meshes), Some(materials)) = (meshes.as_mut(), materials.as_mut()) {

@@ -1,10 +1,9 @@
-use crate::system::input_handler::AimDirection;
 use avian2d::prelude::LinearVelocity;
 use bevy::prelude::*;
 use bevy_renet::renet::RenetServer;
 use game_core::debug_state::Log;
 use game_core::network::{MessageSerialize, ServerChannel};
-use game_core::player::PlayerInfo;
+use game_core::player::{AimDirection, PlayerInfo};
 use game_core::server::ServerMessages;
 
 /// Timer pour contrôler la fréquence d'envoi des updates de position (20 Hz).
@@ -16,7 +15,8 @@ pub struct PositionSyncTimer {
 impl Default for PositionSyncTimer {
     fn default() -> Self {
         Self {
-            timer: Timer::from_seconds(0.05, TimerMode::Repeating),
+            // 30Hz (0.033s) au lieu de 20Hz pour plus de fluidité
+            timer: Timer::from_seconds(0.033, TimerMode::Repeating),
         }
     }
 }

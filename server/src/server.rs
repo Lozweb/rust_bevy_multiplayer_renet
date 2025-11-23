@@ -1,6 +1,9 @@
 use crate::resource::server_lobby::ServerLobby;
 use crate::resource::ServerConfig;
-use crate::system::input_handler::{apply_movement, process_client_inputs};
+use crate::system::input_handler::{
+    apply_movement, interpolate_movement_intent, process_client_inputs,
+};
+use crate::system::level::setup_level;
 use crate::system::position_sync::{broadcast_player_positions, PositionSyncTimer};
 use crate::system::server_event::on_server_event;
 use avian2d::PhysicsPlugins;
@@ -26,10 +29,14 @@ pub(crate) fn plugin(app: &mut App) {
     app.insert_resource(ServerLobby::default());
     app.insert_resource(PositionSyncTimer::default());
 
-    app.add_systems(Startup, setup_server);
+    app.add_systems(Startup, (setup_server, setup_level));
     app.add_systems(Update, on_server_event);
     app.add_systems(Update, process_client_inputs);
-    app.add_systems(Update, apply_movement.after(process_client_inputs));
+    app.add_systems(
+        Update,
+        interpolate_movement_intent.after(process_client_inputs),
+    );
+    app.add_systems(Update, apply_movement.after(interpolate_movement_intent));
     app.add_systems(Update, broadcast_player_positions.after(apply_movement));
 }
 
