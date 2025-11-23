@@ -7,6 +7,7 @@ use bevy_renet::renet::RenetClient;
 use game_core::network::{MessageDeserialize, ServerChannel};
 use game_core::server::ServerMessages;
 
+/// Système qui traite les événements reçus du serveur.
 pub fn on_client_event(
     current_client_id: Option<Res<CurrentClientId>>,
     mut client: ResMut<RenetClient>,
@@ -16,7 +17,6 @@ pub fn on_client_event(
     mut materials: Option<ResMut<Assets<ColorMaterial>>>,
     level_query: Query<Entity, With<Level>>,
 ) {
-    // Si le client n'est pas connecté, ne rien faire
     let Some(_current_client_id) = current_client_id else {
         return;
     };
@@ -75,17 +75,7 @@ pub fn on_client_event(
             ServerMessages::ErrorMessage { reason } => {
                 error!("{}", reason);
             }
-            ServerMessages::PlayerPositionUpdate { .. } => {
-                // Géré par le système receive_position_updates
-                // On ignore ici pour éviter de traiter deux fois
-            }
+            ServerMessages::PlayerPositionUpdate { .. } => {}
         }
-    }
-}
-
-pub fn server_network_sync(mut client: ResMut<RenetClient>) {
-    while let Some(event) = client.receive_message(ServerChannel::NetworkedEntities) {
-        ServerMessages::from_bytes(&event);
-        { /* Ignore other messages */ }
     }
 }

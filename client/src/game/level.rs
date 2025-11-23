@@ -1,6 +1,5 @@
 use crate::audio::music;
 use crate::screens::Screen;
-use avian2d::prelude::{Collider, RigidBody};
 use bevy::prelude::*;
 use game_core::asset_tracking::LoadResource;
 
@@ -27,12 +26,12 @@ impl FromWorld for LevelAssets {
     }
 }
 
-/// A system that spawns the main level.
+/// Système qui spawn le niveau principal.
 pub fn spawn_level(
     mut commands: Commands,
     level_assets: Res<LevelAssets>,
-    mut materials: ResMut<Assets<ColorMaterial>>,
-    mut meshes: ResMut<Assets<Mesh>>,
+    _materials: ResMut<Assets<ColorMaterial>>,
+    _meshes: ResMut<Assets<Mesh>>,
 ) {
     commands
         .spawn((

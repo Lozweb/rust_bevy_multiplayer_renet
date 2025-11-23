@@ -12,14 +12,10 @@ use game_core::network::connection_config;
 use game_core::transport::setup_server_transport;
 use tracing::info;
 
+/// Plugin principal du serveur.
 pub(crate) fn plugin(app: &mut App) {
     app.add_plugins(NetcodeServerPlugin);
-
-    // PhysicsPlugins est nécessaire pour le mouvement des joueurs
-    // Il fonctionne avec MinimalPlugins en mode headless
     app.add_plugins(PhysicsPlugins::default());
-
-    // Désactiver la gravité (jeu en 2D top-down)
     app.insert_resource(avian2d::prelude::Gravity::ZERO);
 
     let server = RenetServer::new(connection_config());
@@ -37,6 +33,7 @@ pub(crate) fn plugin(app: &mut App) {
     app.add_systems(Update, broadcast_player_positions.after(apply_movement));
 }
 
+/// Système de démarrage : affiche le mode de lancement du serveur.
 fn setup_server(config: Res<ServerConfig>) {
     if config.headless {
         info!("Démarrage en mode headless sur le port {}", config.port);

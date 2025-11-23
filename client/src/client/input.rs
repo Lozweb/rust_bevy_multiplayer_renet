@@ -2,10 +2,11 @@ use crate::game::player::{AimDirection, DOWN, JUMP, LEFT, RIGHT, SHOOT, UP};
 use bevy::input::ButtonInput;
 use bevy::prelude::{KeyCode, MouseButton, Res, ResMut};
 use bevy_renet::renet::RenetClient;
-use game_core::client::{ClientMessage, MessageSerialize};
-use game_core::network::ClientChannel;
+use game_core::client::ClientMessage;
+use game_core::network::{ClientChannel, MessageSerialize};
 use game_core::player::PlayerInput;
 
+/// Système qui enregistre les entrées locales et les envoie au serveur.
 pub fn input_sync_system(
     mut player_input: ResMut<PlayerInput>,
     keyboard_input: Res<ButtonInput<KeyCode>>,

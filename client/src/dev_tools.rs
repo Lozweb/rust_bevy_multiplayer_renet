@@ -1,7 +1,10 @@
 use crate::screens::Screen;
 use avian2d::prelude::{PhysicsDebugPlugin, PhysicsGizmos};
 use bevy::{
-    dev_tools::states::log_transitions, input::common_conditions::input_just_pressed, prelude::*,
+    audio::{GlobalVolume, Volume},
+    dev_tools::states::log_transitions,
+    input::common_conditions::input_just_pressed,
+    prelude::*,
 };
 use bevy_egui::EguiPlugin;
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
@@ -14,6 +17,11 @@ struct DebugState {
 
 pub(super) fn plugin(app: &mut App) {
     app.init_resource::<DebugState>();
+
+    // Configure le volume à 10% en mode dev
+    app.insert_resource(GlobalVolume {
+        volume: Volume::Linear(0.1),
+    });
 
     app.add_plugins((
         EguiPlugin::default(),

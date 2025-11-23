@@ -1,71 +1,60 @@
-//! Module de gestion de l'état de debug et du journal de messages pour le serveur.
-//!
-//! Ce module fournit :
-//! - Un enum `DebugMode` pour représenter le mode de debug courant.
-//! - Une ressource `MessageLog` pour stocker un journal circulaire des messages échangés.
-//! - Une structure `LogEntry` pour représenter chaque message loggé, avec horodatage, canal, direction et contenu.
-//! - Un enum `MessageDirection` pour indiquer le sens du message (envoyé ou reçu).
+//! Gestion de l'état de debug et du journal de messages pour le serveur.
 
 use bevy::prelude::*;
 use chrono::{DateTime, Local};
 use std::time::SystemTime;
 
-/// Modes de debug disponibles pour l'application.
+/// Modes de debug disponibles.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default, States)]
 pub enum DebugMode {
-    /// Mode console (par défaut).
+    /// Mode console
     #[default]
     Console,
-    /// Mode caméra.
+    /// Mode caméra
     Camera,
 }
 
-/// Ressource contenant le journal des messages.
-///
-/// `entries` contient les entrées du log.
-/// `max_entries` limite le nombre d'entrées conservées (FIFO).
+/// Ressource contenant le journal des messages réseau.
 #[derive(Resource, Default)]
 pub struct Log {
+    /// Entrées du log
     pub entries: Vec<LogEntry>,
+    /// Nombre maximum d'entrées conservées (FIFO)
     pub max_entries: usize,
 }
 
-/// Représente une entrée dans le journal des messages.
-///
-/// - `timestamp` : horodatage système du message.
-/// - `channel` : nom du canal.
-/// - `direction` : sens du message (envoyé/reçu).
-/// - `content` : contenu du message.
+/// Entrée dans le journal des messages.
 #[derive(Clone)]
 pub struct LogEntry {
     /// Horodatage système du message
     pub timestamp: SystemTime,
+    /// Nom du canal réseau
     pub channel: String,
+    /// Direction du message (envoyé/reçu)
     pub direction: MessageDirection,
+    /// Contenu du message
     pub content: String,
 }
 
 impl LogEntry {
-    /// Formate l'horodatage en date courte et heure.
-    ///
-    /// Format : `JJ/MM HH:MM:SS`
+    /// Formate l'horodatage au format `DD/MM HH:MM:SS`.
     pub fn formatted_timestamp(&self) -> String {
         let datetime: DateTime<Local> = self.timestamp.into();
         datetime.format("%d/%m %H:%M:%S").to_string()
     }
 }
 
-/// Sens du message dans le journal.
+/// Direction d'un message dans le journal.
 #[derive(Clone, Copy, PartialEq)]
 pub enum MessageDirection {
-    /// Message envoyé.
+    /// Message envoyé
     Sent,
-    /// Message reçu.
+    /// Message reçu
     Received,
 }
 
 impl Log {
-    /// Crée un nouveau journal de messages avec une capacité maximale.
+    /// Crée un nouveau journal avec une capacité maximale.
     pub fn new(max_entries: usize) -> Self {
         Self {
             entries: Vec::new(),
@@ -73,9 +62,9 @@ impl Log {
         }
     }
 
-    /// Ajoute une entrée au log avec l'heure système actuelle.
+    /// Ajoute une entrée au log.
     ///
-    /// Si le nombre d'entrées dépasse la capacité maximale, la plus ancienne est supprimée.
+    /// Supprime la plus ancienne entrée si la capacité est dépassée.
     pub fn add(&mut self, channel: String, direction: MessageDirection, content: String) {
         self.entries.push(LogEntry {
             timestamp: SystemTime::now(),
@@ -89,7 +78,7 @@ impl Log {
         }
     }
 
-    /// Vide le journal des messages.
+    /// Vide le journal.
     pub fn clear(&mut self) {
         self.entries.clear();
     }

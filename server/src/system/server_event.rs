@@ -11,7 +11,7 @@ use game_core::debug_state::Log;
 use game_core::player::{spawn_player, PlayerInfo};
 use game_core::server::ServerMessages;
 
-#[allow(dead_code, clippy::too_many_arguments)]
+/// Système qui gère les événements de connexion/déconnexion des clients.
 pub fn on_server_event(
     mut players: Query<(Entity, &PlayerInfo, &Transform)>,
     mut server: ResMut<RenetServer>,
@@ -37,7 +37,6 @@ pub fn on_server_event(
                     &mut materials,
                 );
 
-                // Ajouter le MovementController pour gérer les inputs
                 commands
                     .entity(entity)
                     .insert(MovementController::default())

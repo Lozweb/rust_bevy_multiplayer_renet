@@ -6,58 +6,37 @@ use bincode::error::DecodeError;
 use serde::{Deserialize, Serialize};
 
 /// Messages envoyés par le serveur aux clients.
-///
-/// Ces messages sont sérialisés via `serde` et transmis sur les canaux définis
-/// dans `ServerChannel'.
 #[derive(Debug, Serialize, Deserialize, Component)]
 pub enum ServerMessages {
-    /// Crée un joueur côté client.
-    ///
-    /// - `entity` : identifiant de l'entité côté serveur (permets le mapping).
-    /// - `id` : identifiant unique du client ('ClientId').
-    /// - `translation` : position initiale du joueur sous la forme `[x, y, z]'.
+    /// Notifie la création d'un joueur
     PlayerCreate {
+        /// Identifiant du client propriétaire
         client_id: ClientId,
+        /// Position initiale
         position: Vec3,
+        /// Entité côté serveur
         entity: Entity,
     },
-    /// Supprime un joueur côté client.
-    ///
-    /// - `id` : identifiant unique du client à retirer.
+    /// Notifie la suppression d'un joueur
     PlayerRemove {
+        /// Identifiant du client déconnecté
         client_id: ClientId,
     },
-    /// Met à jour la position d'un joueur.
-    ///
-    /// Envoyé périodiquement sur le canal NetworkedEntities (unreliable).
-    /// - `client_id` : identifiant du joueur à mettre à jour.
-    /// - `position` : nouvelle position du joueur.
-    /// - `velocity` : vélocité actuelle (pour interpolation future).
-    /// - `aim_direction` : direction de visée en radians.
+    /// Met à jour la position d'un joueur (envoyé fréquemment)
     PlayerPositionUpdate {
+        /// Identifiant du joueur
         client_id: ClientId,
+        /// Position actuelle
         position: Vec3,
+        /// Vélocité actuelle
         velocity: Vec2,
+        /// Direction de visée en radians
         aim_direction: f32,
     },
-    ErrorMessage {
-        reason: String,
-    },
+    /// Message d'erreur de désérialisation
+    ErrorMessage { reason: String },
 }
 
-/// Implémentation du trait `DeserializeErrorFallback` pour `ServerMessages`.
-///
-/// Cette implémentation permet de gérer les erreurs de désérialisation.
-/// Lorsqu'une erreur de décodage survient lors de la réception d'un message du serveur,
-/// un message `ErrorMessage` est généré avec la raison de l'échec.
-///
-/// # Arguments
-///
-/// * `err` - L'erreur de décodage rencontrée lors de la désérialisation.
-///
-/// # Retour
-///
-/// Retourne une variante `ErrorMessage` contenant la description de l'erreur.
 impl crate::network::DeserializeErrorFallback for ServerMessages {
     fn deserialize_error(err: DecodeError) -> Self {
         ServerMessages::ErrorMessage {
@@ -67,15 +46,7 @@ impl crate::network::DeserializeErrorFallback for ServerMessages {
 }
 
 impl ServerMessages {
-    /// Envoie un message à tous les clients connectés.
-    ///
-    /// # Arguments
-    ///
-    /// * `server_message` - Référence vers le message à envoyer à tous les clients.
-    /// * `server` - Référence mutable vers le serveur Renet.
-    /// * `log` - Référence mutable vers le journal des messages.
-    ///
-    /// Le message est sérialisé et envoyé sur le canal `ServerMessages` à tous les clients.
+    /// Diffuse un message à tous les clients connectés.
     pub fn broadcast(
         server_message: &ServerMessages,
         server: &mut ResMut<RenetServer>,
@@ -94,16 +65,7 @@ impl ServerMessages {
         }
     }
 
-    /// Envoie un message du serveur à un client spécifique.
-    ///
-    /// # Arguments
-    ///
-    /// * `client_id` - Identifiant du client destinataire.
-    /// * `server_message` - Message à envoyer.
-    /// * `server` - Référence mutable vers le serveur Renet.
-    /// * `log` - Référence mutable vers le journal des messages.
-    ///
-    /// Le message est sérialisé et envoyé sur le canal `ServerMessages` au client spécifié.
+    /// Envoie un message à un client spécifique.
     pub fn send(
         client_id: &ClientId,
         server_message: &ServerMessages,
@@ -125,11 +87,6 @@ impl ServerMessages {
     }
 
     /// Journalise la connexion d'un client.
-    ///
-    /// # Arguments
-    ///
-    /// * `client_id` - Identifiant du client qui vient de se connecter.
-    /// * `log` - Référence mutable vers le journal des messages.
     pub fn client_logon(client_id: &ClientId, log: &mut Option<ResMut<Log>>) {
         if let Some(log) = log {
             log.add(
@@ -139,12 +96,8 @@ impl ServerMessages {
             );
         }
     }
+
     /// Journalise la déconnexion d'un client.
-    ///
-    /// # Arguments
-    ///
-    /// * `client_id` - Identifiant du client qui vient de se déconnecter.
-    /// * `log` - Référence mutable vers le journal des messages.
     pub fn client_logoff(client_id: &ClientId, log: &mut Option<ResMut<Log>>) {
         if let Some(log) = log {
             log.add(
@@ -156,20 +109,15 @@ impl ServerMessages {
     }
 }
 
+/// Snapshot des entités réseau et leurs positions.
+///
+/// Les vecteurs `entities` et `translations` sont parallèles :
+/// l'élément à l'index `i` dans `entities` correspond à la position
+/// à l'index `i` dans `translations`.
 #[derive(Debug, Serialize, Deserialize, Default)]
-/// Représente un snapshot des entités synchronisées et leurs positions.
-///
-/// Cette structure contient deux vecteurs parallèles :
-/// - `entities` : identifiants uniques des entités côté serveur ('u64').
-/// - `translations` : positions sous la forme `[x, y, z]` pour chaque entité.
-///
-/// Contrat : les deux vecteurs doivent avoir la même longueur. L'élément à l'index `i`
-/// dans `entities` correspond à la position à l'index `i` dans `translations'.
-///
-/// Sérialisée via `serde` pour être envoyée sur le canal `NetworkedEntities'.
 pub struct NetworkedEntities {
-    /// Identifiants des entités côté serveur.
+    /// Identifiants des entités côté serveur
     pub entities: Vec<u64>,
-    /// Positions des entités : `[x, y, z]`.
+    /// Positions des entités [x, y, z]
     pub translations: Vec<[f32; 3]>,
 }

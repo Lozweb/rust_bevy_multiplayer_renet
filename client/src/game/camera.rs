@@ -5,6 +5,7 @@ use bevy::prelude::{
     Commands, Component, IntoScheduleConfigs, Name, Query, Startup, Transform, Update, With,
     Without,
 };
+use game_core::player::ControlledPlayer;
 
 #[derive(Component)]
 pub struct MainCamera;
@@ -23,14 +24,22 @@ fn spawn_camera(mut commands: Commands) {
     ));
 }
 
+/// Système qui fait suivre la caméra au joueur local.
+///
+/// La caméra suit uniquement le joueur marqué avec `ControlledPlayer`,
+/// c'est-à-dire le joueur contrôlé par ce client.
 fn camera_follow(
-    player_query: Query<&Transform, (With<Player>, Without<Camera2d>)>,
+    player_query: Query<&Transform, (With<Player>, With<ControlledPlayer>, Without<Camera2d>)>,
     mut camera_query: Query<&mut Transform, With<Camera2d>>,
 ) {
-    if let Ok(player) = player_query.single()
-        && let Ok(mut camera2d) = camera_query.single_mut()
-    {
-        camera2d.translation.x = player.translation.x;
-        camera2d.translation.y = player.translation.y;
-    }
+    let Ok(player) = player_query.single() else {
+        return;
+    };
+
+    let Ok(mut camera2d) = camera_query.single_mut() else {
+        return;
+    };
+
+    camera2d.translation.x = player.translation.x;
+    camera2d.translation.y = player.translation.y;
 }

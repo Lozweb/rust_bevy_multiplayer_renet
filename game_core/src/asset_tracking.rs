@@ -2,12 +2,17 @@ use bevy::asset::UntypedHandle;
 use bevy::prelude::*;
 use std::collections::VecDeque;
 
+/// Plugin de suivi du chargement des ressources basées sur des assets.
 pub fn plugin(app: &mut App) {
     app.init_resource::<ResourceHandles>();
     app.add_systems(PreUpdate, load_resource_assets);
 }
 
+/// Extension pour charger une ressource depuis un asset.
 pub trait LoadResource {
+    /// Charge un type `T` comme ressource depuis un asset.
+    ///
+    /// Le type doit implémenter `Resource`, `Asset`, `Clone` et `FromWorld`.
     fn load_resource<T: Resource + Asset + Clone + FromWorld>(&mut self) -> &mut Self;
 }
 
@@ -33,18 +38,23 @@ impl LoadResource for App {
 
 type InsertLoadedResource = fn(&mut World, &UntypedHandle);
 
+/// Gestionnaire de handles d'assets en attente de chargement.
 #[derive(Resource, Default)]
 pub struct ResourceHandles {
+    /// File d'attente des assets en cours de chargement
     waiting: VecDeque<(UntypedHandle, InsertLoadedResource)>,
+    /// Assets complètement chargés
     finished: Vec<UntypedHandle>,
 }
 
 impl ResourceHandles {
+    /// Vérifie si tous les assets sont chargés.
     pub fn is_all_done(&self) -> bool {
         self.waiting.is_empty()
     }
 }
 
+/// Système qui vérifie et insère les ressources une fois leurs assets chargés.
 fn load_resource_assets(world: &mut World) {
     world.resource_scope(|world, mut resource_handles: Mut<ResourceHandles>| {
         world.resource_scope(|world, assets: Mut<AssetServer>| {

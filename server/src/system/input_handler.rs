@@ -5,11 +5,12 @@ use game_core::client::ClientMessage;
 use game_core::network::{ClientChannel, MessageDeserialize};
 use game_core::player::PlayerInfo;
 
-/// Contrôleur de mouvement pour les joueurs côté serveur.
-/// Identique à celui du client pour une simulation cohérente.
+/// Contrôleur de mouvement côté serveur.
 #[derive(Component)]
 pub struct MovementController {
+    /// Direction de mouvement normalisée
     pub intent: Vec2,
+    /// Vitesse maximale en unités/seconde
     pub max_speed: f32,
 }
 
@@ -22,31 +23,24 @@ impl Default for MovementController {
     }
 }
 
-/// Direction de visée du joueur en radians côté serveur.
+/// Direction de visée du joueur en radians.
 #[derive(Component, Debug, Clone, Copy, PartialEq, Default)]
 pub struct AimDirection(pub f32);
 
 /// Système qui reçoit et traite les inputs de tous les clients connectés.
-#[allow(clippy::type_complexity)]
 pub fn process_client_inputs(
     mut server: ResMut<RenetServer>,
     lobby: Res<ServerLobby>,
     mut players: Query<(&PlayerInfo, &mut MovementController, &mut AimDirection)>,
 ) {
-    // Pour chaque client connecté
     for client_id in server.clients_id() {
-        // Lire tous les messages Input de ce client
         while let Some(message) = server.receive_message(client_id, ClientChannel::Input) {
-            // Désérialiser le message
             match ClientMessage::from_bytes(&message) {
                 ClientMessage::Input(input) => {
-                    // Trouver l'entité du joueur via le lobby
                     if let Some(player_entity) = lobby.get_player(&client_id) {
-                        // Appliquer l'input au joueur
                         if let Ok((_player_info, mut controller, mut aim_direction)) =
                             players.get_mut(*player_entity)
                         {
-                            // Calculer la direction de mouvement basée sur les inputs
                             let mut movement = Vec2::ZERO;
 
                             if input.up {
@@ -67,10 +61,7 @@ pub fn process_client_inputs(
                         }
                     }
                 }
-
-                ClientMessage::Command(_) | ClientMessage::ErrorMessage { .. } => {
-                    // Ces messages ne sont pas gérés par ce système
-                }
+                ClientMessage::Command(_) | ClientMessage::ErrorMessage { .. } => {}
             }
         }
     }

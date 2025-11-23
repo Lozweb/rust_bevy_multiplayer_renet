@@ -1,9 +1,10 @@
 use clap::Parser;
 
+/// Arguments CLI du serveur.
 #[derive(Parser, Debug, Clone)]
 #[command(author, version, about = "Serveur de jeu multijoueur")]
 pub struct ServerArgs {
-    /// lance le serveur en mode headless (sans interface graphique)
+    /// Lance le serveur en mode headless (sans interface graphique)
     #[arg(long, default_value_t = false)]
     pub headless: bool,
 

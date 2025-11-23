@@ -4,6 +4,20 @@ use bevy_renet::netcode::{
     ServerConfig,
 };
 
+/// Configure et crée le transport réseau côté serveur.
+///
+/// # Arguments
+///
+/// * `ip` - Adresse IP d'écoute
+/// * `port` - Port d'écoute
+///
+/// # Returns
+///
+/// Transport serveur configuré avec 64 clients max et authentification non sécurisée
+///
+/// # Panics
+///
+/// Panique si l'adresse IP:port est invalide
 pub fn setup_server_transport(ip: &str, port: u64) -> NetcodeServerTransport {
     let public_addr = format!("{}:{}", ip, port)
         .parse()
@@ -22,6 +36,20 @@ pub fn setup_server_transport(ip: &str, port: u64) -> NetcodeServerTransport {
     .unwrap()
 }
 
+/// Configure et crée le transport réseau côté client.
+///
+/// # Arguments
+///
+/// * `ip` - Adresse IP du serveur
+/// * `port` - Port du serveur
+///
+/// # Returns
+///
+/// Transport client avec ID unique basé sur le timestamp
+///
+/// # Panics
+///
+/// Panique si l'adresse IP:port est invalide
 pub fn setup_client_transport(ip: &str, port: u64) -> NetcodeClientTransport {
     let server_addr = format!("{}:{}", ip, port)
         .parse()

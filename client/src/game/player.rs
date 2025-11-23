@@ -41,6 +41,7 @@ pub struct PlayerInfo {
     /// Identifiant unique du client (fourni par `bevy_renet').
     pub id: ClientId,
     /// Nom affiché du joueur.
+    #[allow(dead_code)]
     pub name: String,
 }
 

@@ -29,6 +29,9 @@ use bevy_egui::EguiPlugin;
 #[cfg(feature = "dev")]
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
 
+/// Point d'entrée du serveur.
+///
+/// Configure l'application en mode headless ou avec interface selon les arguments CLI.
 fn main() {
     let args = ServerArgs::parse();
     let config = ServerConfig::new(args.headless, args.port);
