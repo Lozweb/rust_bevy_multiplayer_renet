@@ -2,10 +2,12 @@
 mod ui {}
 
 mod config;
-mod debug;
 mod resource;
 mod server;
 mod system;
+
+#[cfg(feature = "dev")]
+mod debug;
 
 #[cfg(feature = "dev")]
 mod ui;
@@ -19,10 +21,13 @@ use bevy::prelude::Window;
 use bevy::utils::default;
 use bevy::window::WindowPlugin;
 use bevy::{DefaultPlugins, MinimalPlugins};
-use bevy_egui::EguiPlugin;
-use bevy_inspector_egui::quick::WorldInspectorPlugin;
 use bevy_renet::RenetServerPlugin;
 use clap::Parser;
+
+#[cfg(feature = "dev")]
+use bevy_egui::EguiPlugin;
+#[cfg(feature = "dev")]
+use bevy_inspector_egui::quick::WorldInspectorPlugin;
 
 fn main() {
     let args = ServerArgs::parse();
@@ -32,7 +37,10 @@ fn main() {
 
     if headless {
         app.add_plugins(MinimalPlugins)
-            .add_plugins(LogPlugin::default());
+            .add_plugins(LogPlugin::default())
+            .add_plugins(bevy::transform::TransformPlugin)
+            .add_plugins(AssetPlugin::default())
+            .add_plugins(bevy::scene::ScenePlugin);
     } else {
         app.add_plugins(
             DefaultPlugins

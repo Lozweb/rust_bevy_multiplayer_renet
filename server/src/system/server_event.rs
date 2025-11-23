@@ -1,4 +1,5 @@
 use crate::resource::server_lobby::ServerLobby;
+use crate::system::input_handler::{AimDirection, MovementController};
 use bevy::asset::Assets;
 use bevy::math::Vec3;
 use bevy::mesh::Mesh;
@@ -35,6 +36,12 @@ pub fn on_server_event(
                     &mut meshes,
                     &mut materials,
                 );
+
+                // Ajouter le MovementController pour gérer les inputs
+                commands
+                    .entity(entity)
+                    .insert(MovementController::default())
+                    .insert(AimDirection::default());
 
                 lobby.add_player(client_id, entity);
 

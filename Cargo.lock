@@ -2946,6 +2946,7 @@ dependencies = [
 name = "game_core"
 version = "0.1.0"
 dependencies = [
+ "avian2d",
  "bevy",
  "bevy_renet",
  "bincode",
@@ -5351,6 +5352,7 @@ dependencies = [
 name = "server"
 version = "0.1.0"
 dependencies = [
+ "avian2d",
  "bevy",
  "bevy-inspector-egui",
  "bevy_egui",

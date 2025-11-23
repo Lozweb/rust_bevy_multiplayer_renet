@@ -69,13 +69,14 @@ fn apply_movement(mut movement_query: Query<(&MovementController, &mut LinearVel
 }
 
 fn apply_aim_direction(
-    aim_direction: Single<(&AimDirection, &Children), With<Player>>,
+    players_query: Query<(&AimDirection, &Children), With<Player>>,
     mut aim_rig_query: Query<&mut Transform, With<AimRig>>,
 ) {
-    let (aim_direction, children) = aim_direction.into_inner();
-    for &child in children {
-        if let Ok(mut rig_transform) = aim_rig_query.get_mut(child) {
-            rig_transform.rotation = Quat::from_rotation_z(aim_direction.0);
+    for (aim_direction, children) in &players_query {
+        for &child in children {
+            if let Ok(mut rig_transform) = aim_rig_query.get_mut(child) {
+                rig_transform.rotation = Quat::from_rotation_z(aim_direction.0);
+            }
         }
     }
 }

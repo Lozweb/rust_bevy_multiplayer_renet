@@ -1,9 +1,15 @@
+#[cfg(feature = "dev")]
 use crate::system::debug_camera::{setup_debug_camera, update_debug_camera};
+#[cfg(feature = "dev")]
 use crate::ui::console::*;
+#[cfg(feature = "dev")]
 use crate::ui::menu::{handle_mode_switch, setup_menu};
+#[cfg(feature = "dev")]
 use bevy::prelude::{in_state, App, AppExtStates, IntoScheduleConfigs, Startup, Update};
+#[cfg(feature = "dev")]
 use game_core::debug_state::{DebugMode, Log};
 
+#[cfg(feature = "dev")]
 pub(super) fn plugin(app: &mut App) {
     app.init_state::<DebugMode>()
         .init_resource::<ConsoleScrollState>()
@@ -21,4 +27,9 @@ pub(super) fn plugin(app: &mut App) {
             ),
         )
         .add_observer(on_scroll_handler);
+}
+
+#[cfg(not(feature = "dev"))]
+pub(super) fn plugin(_app: &mut bevy::app::App) {
+    // Debug plugin désactivé en mode release/headless
 }

@@ -6,7 +6,6 @@
 /// - `ErrorMessage { reason: String }` : signale une erreur avec une raison.
 #[derive(Debug, Serialize, Deserialize, Component)]
 pub enum ClientMessage {
-    ClientReady,
     Input(PlayerInput),
     Command(String),
     ErrorMessage { reason: String },

@@ -1,4 +1,5 @@
 use crate::client::event::on_client_event;
+use crate::client::position_sync::receive_position_updates;
 use crate::client::Connected;
 use crate::game::level::spawn_level;
 use crate::menu::Menu;
@@ -43,7 +44,10 @@ pub(super) fn plugin(app: &mut App) {
         unpause.run_if(in_state(Screen::Gameplay)),
     );
 
-    app.add_systems(Update, on_client_event.in_set(Connected));
+    app.add_systems(
+        Update,
+        (on_client_event, receive_position_updates).in_set(Connected),
+    );
     app.configure_sets(Update, Connected.run_if(client_connected));
 }
 

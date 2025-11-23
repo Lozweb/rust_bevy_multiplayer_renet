@@ -1,6 +1,6 @@
 use crate::debug_state::{Log, MessageDirection};
 use crate::network::{MessageSerialize, ServerChannel};
-use bevy::prelude::{Component, Entity, ResMut, Vec3};
+use bevy::prelude::{Component, Entity, ResMut, Vec2, Vec3};
 use bevy_renet::renet::{ClientId, RenetServer};
 use bincode::error::DecodeError;
 use serde::{Deserialize, Serialize};
@@ -26,6 +26,19 @@ pub enum ServerMessages {
     /// - `id` : identifiant unique du client à retirer.
     PlayerRemove {
         client_id: ClientId,
+    },
+    /// Met à jour la position d'un joueur.
+    ///
+    /// Envoyé périodiquement sur le canal NetworkedEntities (unreliable).
+    /// - `client_id` : identifiant du joueur à mettre à jour.
+    /// - `position` : nouvelle position du joueur.
+    /// - `velocity` : vélocité actuelle (pour interpolation future).
+    /// - `aim_direction` : direction de visée en radians.
+    PlayerPositionUpdate {
+        client_id: ClientId,
+        position: Vec3,
+        velocity: Vec2,
+        aim_direction: f32,
     },
     ErrorMessage {
         reason: String,

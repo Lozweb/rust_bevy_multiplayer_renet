@@ -43,31 +43,10 @@ pub fn spawn_level(
             DespawnOnExit(Screen::Gameplay),
         ))
         .with_children(|parent| {
-            parent.spawn(wall(
-                &mut meshes,
-                &mut materials,
-                Vec2::new(0.0, -300.0),
-                Vec2::new(500.0, 25.0),
-            ));
+            // TODO: Charger le level depuis le serveur
             parent.spawn((
                 Name::new("Gameplay Music"),
                 music(level_assets.music.clone()),
             ));
         });
-}
-
-fn wall(
-    meshes: &mut ResMut<Assets<Mesh>>,
-    materials: &mut ResMut<Assets<ColorMaterial>>,
-    position: Vec2,
-    size: Vec2,
-) -> impl Bundle {
-    (
-        Name::new("Wall"),
-        Mesh2d(meshes.add(Rectangle::new(size.x, size.y))),
-        MeshMaterial2d(materials.add(ColorMaterial::from(Color::WHITE))),
-        Transform::from_translation(position.extend(0.0)),
-        RigidBody::Static,
-        Collider::rectangle(size.x, size.y),
-    )
 }

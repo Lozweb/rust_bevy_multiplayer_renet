@@ -5,7 +5,6 @@ use bevy::app::App;
 use bevy::image::{ImageLoaderSettings, ImageSampler};
 use bevy::input::common_conditions::input_just_pressed;
 use bevy::prelude::*;
-use bevy_egui::egui::SafeAreaInsets;
 
 const SPLASH_BACKGROUND_COLOR: Color = Color::srgb(0.157, 0.157, 0.157);
 const SPLASH_DURATION_SECS: f32 = 1.8;

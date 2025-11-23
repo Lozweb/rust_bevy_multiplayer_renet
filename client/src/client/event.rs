@@ -5,7 +5,6 @@ use bevy::log::error;
 use bevy::prelude::*;
 use bevy_renet::renet::RenetClient;
 use game_core::network::{MessageDeserialize, ServerChannel};
-use game_core::player::ControlledPlayer;
 use game_core::server::ServerMessages;
 
 pub fn on_client_event(
@@ -18,7 +17,7 @@ pub fn on_client_event(
     level_query: Query<Entity, With<Level>>,
 ) {
     // Si le client n'est pas connecté, ne rien faire
-    let Some(current_client_id) = current_client_id else {
+    let Some(_current_client_id) = current_client_id else {
         return;
     };
 
@@ -38,22 +37,13 @@ pub fn on_client_event(
                     && let Ok(level_entity) = level_query.single()
                 {
                     let player_bundle = player(client_id, position, 400., materials, meshes);
-                    let is_local_player = current_client_id.0 == client_id;
 
-                    // Spawn le joueur comme enfant du level
                     let mut player_entity_id = None;
                     commands.entity(level_entity).with_children(|parent| {
-                        let mut entity_commands = parent.spawn(player_bundle);
-
-                        // Ajouter ControlledPlayer uniquement si c'est le joueur local
-                        if is_local_player {
-                            entity_commands.insert(ControlledPlayer);
-                        }
-
+                        let entity_commands = parent.spawn(player_bundle);
                         player_entity_id = Some(entity_commands.id());
                     });
 
-                    // Enregistrer le joueur dans le lobby
                     if let Some(player_id) = player_entity_id {
                         lobby.add_player(
                             &client_id,
@@ -62,9 +52,7 @@ pub fn on_client_event(
                                 client_entity: player_id,
                             },
                         );
-                        info!(
-                            "Player created: {client_id} at {position:?} with entity {entity} (local: {is_local_player})"
-                        );
+                        info!("Player created: {client_id} at {position:?} with entity {entity}");
                     }
                 } else if player_exists_by_id || player_exists_by_entity {
                     info!(
@@ -86,6 +74,10 @@ pub fn on_client_event(
             }
             ServerMessages::ErrorMessage { reason } => {
                 error!("{}", reason);
+            }
+            ServerMessages::PlayerPositionUpdate { .. } => {
+                // Géré par le système receive_position_updates
+                // On ignore ici pour éviter de traiter deux fois
             }
         }
     }

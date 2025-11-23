@@ -3,7 +3,7 @@ use bevy::math::{Vec2, Vec3};
 use bevy::mesh::{Mesh, Mesh2d};
 use bevy::prelude::{
     Circle, ColorMaterial, Commands, Component, Deref, Entity, MeshMaterial2d, ResMut, Resource,
-    Transform,
+    Transform, Visibility,
 };
 use bevy_renet::renet::ClientId;
 use serde::{Deserialize, Serialize};
@@ -69,12 +69,20 @@ pub fn spawn_player(
     meshes: &mut Option<ResMut<Assets<Mesh>>>,
     materials: &mut Option<ResMut<Assets<ColorMaterial>>>,
 ) -> Entity {
+    use avian2d::prelude::*;
+
     let mut entity_commands = commands.spawn((
         Transform::from_translation(position),
+        Visibility::default(),
         PlayerInfo {
             id: *client_id,
             name: format!("Player_{client_id}"),
         },
+        // Composants physiques pour la simulation serveur
+        RigidBody::Dynamic,
+        Collider::rectangle(32.0, 32.0),
+        LinearVelocity::ZERO,
+        LockedAxes::ROTATION_LOCKED,
     ));
 
     // Ajouter les composants visuels uniquement si les assets sont disponibles

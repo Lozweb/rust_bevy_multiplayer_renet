@@ -92,6 +92,7 @@ pub(super) fn plugin(app: &mut App) {
     app.insert_resource(AimDirection::default());
 
     app.add_systems(Update, input_sync_system.in_set(Connected));
+    app.add_systems(Update, mark_local_player.in_set(Connected));
     app.configure_sets(Update, Connected.run_if(client_connected));
 }
 
@@ -183,11 +184,37 @@ pub fn player(
     )
 }
 
+/// Marque automatiquement le joueur local avec le composant ControlledPlayer.
+///
+/// Ce système identifie les joueurs qui ont un PlayerInfo.id correspondant au
+/// CurrentClientId et leur ajoute le composant ControlledPlayer s'ils ne l'ont pas déjà.
+fn mark_local_player(
+    mut commands: Commands,
+    current_client_id: Res<crate::resource::CurrentClientId>,
+    untagged_players: Query<(Entity, &PlayerInfo), (With<Player>, Without<ControlledPlayer>)>,
+) {
+    for (entity, player_info) in &untagged_players {
+        if player_info.id == current_client_id.0 {
+            info!("Marking player {} as locally controlled", player_info.id);
+            commands.entity(entity).insert(ControlledPlayer);
+        }
+    }
+}
+
 fn record_aim_direction(
     camera_query: Single<(&Camera, &GlobalTransform), With<MainCamera>>,
     window: Single<&Window>,
-    player_query: Single<(&GlobalTransform, &mut AimDirection), With<Player>>,
+    mut player_query: Query<
+        (&GlobalTransform, &mut AimDirection),
+        (With<Player>, With<ControlledPlayer>),
+    >,
+    mut aim_direction_resource: ResMut<AimDirection>,
 ) {
+    // Si aucun joueur contrôlé n'existe, ne rien faire
+    let Some((player_transform, mut aim_direction)) = player_query.iter_mut().next() else {
+        return;
+    };
+
     let mouse_coords = window.cursor_position().map(|pos| {
         let (camera, camera_transform) = camera_query.into_inner();
         camera
@@ -195,12 +222,13 @@ fn record_aim_direction(
             .unwrap_or(vec2(0.0, 0.0))
     });
 
-    let (player_transform, mut aim_direction) = player_query.into_inner();
     let player_pos = player_transform.translation().truncate();
     let aim_direction_vec = mouse_coords.unwrap_or_default() - player_pos;
 
     if aim_direction_vec != Vec2::ZERO {
-        aim_direction.0 = aim_direction_vec.y.atan2(aim_direction_vec.x);
+        let new_direction = aim_direction_vec.y.atan2(aim_direction_vec.x);
+        aim_direction.0 = new_direction;
+        aim_direction_resource.0 = new_direction;
     }
 }
 

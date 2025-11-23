@@ -1,5 +1,6 @@
 pub(crate) mod event;
 pub mod input;
+pub(crate) mod position_sync;
 
 use crate::resource::ClientLobby;
 use bevy::prelude::*;
