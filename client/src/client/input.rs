@@ -1,16 +1,10 @@
+use crate::game::player::{DOWN, JUMP, LEFT, RIGHT, SHOOT, UP};
 use bevy::input::ButtonInput;
 use bevy::prelude::{KeyCode, MouseButton, Res, ResMut};
 use bevy_renet::renet::RenetClient;
-use game_core::client::ClientMessage;
-use game_core::network::{ClientChannel, MessageSerialize};
+use game_core::client::{ClientMessage, MessageSerialize};
+use game_core::network::ClientChannel;
 use game_core::player::PlayerInput;
-
-const UP: [KeyCode; 2] = [KeyCode::KeyW, KeyCode::ArrowUp];
-const DOWN: [KeyCode; 2] = [KeyCode::KeyS, KeyCode::ArrowDown];
-const LEFT: [KeyCode; 2] = [KeyCode::KeyA, KeyCode::ArrowLeft];
-const RIGHT: [KeyCode; 2] = [KeyCode::KeyD, KeyCode::ArrowRight];
-const JUMP: KeyCode = KeyCode::Space;
-const SHOOT: MouseButton = MouseButton::Left;
 
 pub fn input_sync_system(
     mut player_input: ResMut<PlayerInput>,

@@ -1,3 +1,4 @@
+pub mod asset_tracking;
 pub mod client;
 pub mod debug_state;
 pub mod network;

@@ -19,7 +19,7 @@ pub struct PlayerEntities {
 #[derive(Debug, Default, Resource)]
 pub struct ClientLobby {
     /// Mappe l'identifiant Renet d'un client aux entités du joueur.
-    pub(crate) players: HashMap<ClientId, PlayerEntities>,
+    pub players: HashMap<ClientId, PlayerEntities>,
 }
 
 impl ClientLobby {
