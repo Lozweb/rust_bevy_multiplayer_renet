@@ -1,7 +1,6 @@
 use bevy::input::mouse::{MouseScrollUnit, MouseWheel};
 use bevy::prelude::*;
 use game_core::debug_state::{Log, MessageDirection};
-use log::info;
 
 #[derive(Component)]
 pub struct ConsoleContainer;

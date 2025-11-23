@@ -11,8 +11,8 @@ pub fn on_client_event(
     mut client: ResMut<RenetClient>,
     mut lobby: ResMut<ClientLobby>,
     mut commands: Commands,
-    mut meshes: ResMut<Assets<Mesh>>,
-    mut materials: ResMut<Assets<ColorMaterial>>,
+    mut meshes: Option<ResMut<Assets<Mesh>>>,
+    mut materials: Option<ResMut<Assets<ColorMaterial>>>,
 ) {
     while let Some(event) = client.receive_message(ServerChannel::ServerMessages) {
         match ServerMessages::from_bytes(&event) {
@@ -23,6 +23,7 @@ pub fn on_client_event(
             } => {
                 if lobby.get_player_by_server_entity(&entity).is_none() {
                     info!("Player created: {client_id} at {position:?} with entity {entity}");
+
                     let player = spawn_player(
                         &client_id,
                         position,

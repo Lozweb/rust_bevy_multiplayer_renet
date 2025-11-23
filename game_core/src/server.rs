@@ -66,17 +66,19 @@ impl ServerMessages {
     pub fn broadcast(
         server_message: &ServerMessages,
         server: &mut ResMut<RenetServer>,
-        log: &mut ResMut<Log>,
+        log: &mut Option<ResMut<Log>>,
     ) {
         server.broadcast_message(
             ServerChannel::ServerMessages,
             ServerMessages::to_bytes(server_message),
         );
-        log.add(
-            "ServerMessages".to_string(),
-            MessageDirection::Sent,
-            format!("Broadcasted: {:?}", server_message),
-        )
+        if let Some(log) = log {
+            log.add(
+                "ServerMessages".to_string(),
+                MessageDirection::Sent,
+                format!("Broadcasted: {:?}", server_message),
+            );
+        }
     }
 
     /// Envoie un message du serveur à un client spécifique.
@@ -93,18 +95,20 @@ impl ServerMessages {
         client_id: &ClientId,
         server_message: &ServerMessages,
         server: &mut ResMut<RenetServer>,
-        log: &mut ResMut<Log>,
+        log: &mut Option<ResMut<Log>>,
     ) {
         server.send_message(
             *client_id,
             ServerChannel::ServerMessages,
             ServerMessages::to_bytes(server_message),
         );
-        log.add(
-            "ServerMessages".to_string(),
-            MessageDirection::Sent,
-            format!("Sent to {}: {:?}", client_id, server_message),
-        );
+        if let Some(log) = log {
+            log.add(
+                "ServerMessages".to_string(),
+                MessageDirection::Sent,
+                format!("Sent to {}: {:?}", client_id, server_message),
+            );
+        }
     }
 
     /// Journalise la connexion d'un client.
@@ -113,12 +117,14 @@ impl ServerMessages {
     ///
     /// * `client_id` - Identifiant du client qui vient de se connecter.
     /// * `log` - Référence mutable vers le journal des messages.
-    pub fn client_logon(client_id: &ClientId, log: &mut ResMut<Log>) {
-        log.add(
-            "ServerMessages".to_string(),
-            MessageDirection::Sent,
-            format!("Client {} connected", client_id),
-        );
+    pub fn client_logon(client_id: &ClientId, log: &mut Option<ResMut<Log>>) {
+        if let Some(log) = log {
+            log.add(
+                "ServerMessages".to_string(),
+                MessageDirection::Sent,
+                format!("Client {} connected", client_id),
+            );
+        }
     }
     /// Journalise la déconnexion d'un client.
     ///
@@ -126,12 +132,14 @@ impl ServerMessages {
     ///
     /// * `client_id` - Identifiant du client qui vient de se déconnecter.
     /// * `log` - Référence mutable vers le journal des messages.
-    pub fn client_logoff(client_id: &ClientId, log: &mut ResMut<Log>) {
-        log.add(
-            "ServerMessages".to_string(),
-            MessageDirection::Sent,
-            format!("Client {} disconnected", client_id),
-        );
+    pub fn client_logoff(client_id: &ClientId, log: &mut Option<ResMut<Log>>) {
+        if let Some(log) = log {
+            log.add(
+                "ServerMessages".to_string(),
+                MessageDirection::Sent,
+                format!("Client {} disconnected", client_id),
+            );
+        }
     }
 }
 

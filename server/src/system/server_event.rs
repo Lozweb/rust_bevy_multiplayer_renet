@@ -15,9 +15,9 @@ pub fn on_server_event(
     mut players: Query<(Entity, &PlayerInfo, &Transform)>,
     mut server: ResMut<RenetServer>,
     mut lobby: ResMut<ServerLobby>,
-    mut log: ResMut<Log>,
-    mut meshes: ResMut<Assets<Mesh>>,
-    mut materials: ResMut<Assets<ColorMaterial>>,
+    mut log: Option<ResMut<Log>>,
+    mut meshes: Option<ResMut<Assets<Mesh>>>,
+    mut materials: Option<ResMut<Assets<ColorMaterial>>>,
     mut server_event_reader: MessageReader<ServerEvent>,
     mut commands: Commands,
 ) {

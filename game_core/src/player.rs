@@ -66,18 +66,24 @@ pub fn spawn_player(
     client_id: &ClientId,
     position: Vec3,
     commands: &mut Commands,
-    meshes: &mut ResMut<Assets<Mesh>>,
-    materials: &mut ResMut<Assets<ColorMaterial>>,
+    meshes: &mut Option<ResMut<Assets<Mesh>>>,
+    materials: &mut Option<ResMut<Assets<ColorMaterial>>>,
 ) -> Entity {
-    commands
-        .spawn((
-            Transform::from_translation(position),
+    let mut entity_commands = commands.spawn((
+        Transform::from_translation(position),
+        PlayerInfo {
+            id: *client_id,
+            name: format!("Player_{client_id}"),
+        },
+    ));
+
+    // Ajouter les composants visuels uniquement si les assets sont disponibles
+    if let (Some(meshes), Some(materials)) = (meshes.as_mut(), materials.as_mut()) {
+        entity_commands.insert((
             Mesh2d(meshes.add(Mesh::from(Circle::new(40.0)))),
             MeshMaterial2d(materials.add(ColorMaterial::default())),
-            PlayerInfo {
-                id: *client_id,
-                name: format!("Player_{client_id}"),
-            },
-        ))
-        .id()
+        ));
+    }
+
+    entity_commands.id()
 }
