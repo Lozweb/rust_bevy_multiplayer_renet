@@ -40,14 +40,10 @@ pub(crate) fn plugin(app: &mut App) {
     app.add_systems(Update, broadcast_player_positions.after(apply_movement));
 }
 
-/// Système de démarrage : affiche le mode de lancement du serveur.
+/// Système de démarrage : affiche les informations du serveur.
 fn setup_server(config: Res<ServerConfig>) {
-    if config.headless {
-        info!("Démarrage en mode headless sur le port {}", config.port);
-    } else {
-        info!(
-            "Démarrage du serveur avec interface graphique sur le port {}",
-            config.port
-        );
-    }
+    info!(
+        "Serveur démarré en mode console sur le port {}",
+        config.port
+    );
 }
