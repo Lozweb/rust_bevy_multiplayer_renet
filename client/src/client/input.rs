@@ -5,6 +5,8 @@ use game_core::client::ClientMessage;
 use game_core::network::{ClientChannel, MessageSerialize};
 use game_core::player::{AimDirection, PlayerInput};
 
+const INPUT_KEEPALIVE: f32 = 0.1;
+
 /// Système qui enregistre les entrées locales et les envoie au serveur.
 ///
 /// Optimisé pour n'envoyer que lorsque les inputs changent ou périodiquement
@@ -15,6 +17,8 @@ pub fn input_sync_system(
     mouse_input: Res<ButtonInput<MouseButton>>,
     aim_direction: Res<AimDirection>,
     mut client: ResMut<RenetClient>,
+    time: Res<Time>,
+    mut last_sent: Local<f32>,
 ) {
     let previous_input = *player_input;
 
@@ -37,11 +41,13 @@ pub fn input_sync_system(
 
     // Envoie si : mouvement changé, visée changée, action (jump/shoot)
     let should_send = movement_changed || aim_changed || player_input.jump || player_input.shoot;
+    *last_sent += time.delta_secs();
 
-    if should_send {
+    if should_send || *last_sent >= INPUT_KEEPALIVE {
         client.send_message(
             ClientChannel::Input,
             ClientMessage::to_bytes(&ClientMessage::Input(*player_input)),
         );
+        *last_sent = 0.0;
     }
 }

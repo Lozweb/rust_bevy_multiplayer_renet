@@ -116,7 +116,6 @@ pub fn spawn_player(
         LockedAxes::ROTATION_LOCKED,
         Friction::new(0.1),    // Friction faible pour glissement fluide
         Restitution::new(0.0), // Pas de rebond sur les collisions
-        ColliderDensity(1.0),  // Densité uniforme
     ));
 
     if let (Some(meshes), Some(materials)) = (meshes.as_mut(), materials.as_mut()) {

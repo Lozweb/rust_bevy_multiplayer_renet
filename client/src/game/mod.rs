@@ -3,7 +3,7 @@ use bevy::prelude::*;
 mod animation;
 mod camera;
 pub mod level;
-mod movement;
+pub(crate) mod movement;
 pub mod player;
 
 pub(super) fn plugin(app: &mut App) {

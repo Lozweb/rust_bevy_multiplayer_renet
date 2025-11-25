@@ -5,7 +5,7 @@ use bevy::log::error;
 use bevy::prelude::*;
 use bevy_renet::renet::RenetClient;
 use game_core::network::{MessageDeserialize, ServerChannel};
-use game_core::server::ServerMessages;
+use game_core::server::{CriticalServerEvent, ServerMessages};
 
 /// Système qui traite les événements reçus du serveur.
 pub fn on_client_event(
@@ -21,7 +21,7 @@ pub fn on_client_event(
         return;
     };
 
-    while let Some(event) = client.receive_message(ServerChannel::ServerMessages) {
+    while let Some(event) = client.receive_message(ServerChannel::ReliableState) {
         match ServerMessages::from_bytes(&event) {
             ServerMessages::PlayerCreate {
                 client_id,
@@ -76,6 +76,21 @@ pub fn on_client_event(
                 error!("{}", reason);
             }
             ServerMessages::PlayerPositionUpdate { .. } => {}
+            ServerMessages::CriticalEvent(payload) => handle_critical_event(payload),
+        }
+    }
+
+    while let Some(event) = client.receive_message(ServerChannel::CriticalEvents) {
+        if let ServerMessages::CriticalEvent(payload) = ServerMessages::from_bytes(&event) {
+            handle_critical_event(payload);
+        }
+    }
+}
+
+fn handle_critical_event(event: CriticalServerEvent) {
+    match event {
+        CriticalServerEvent::ProjectileFired { client_id } => {
+            info!("Projectile tiré par {:?}", client_id);
         }
     }
 }

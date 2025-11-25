@@ -35,6 +35,8 @@ pub enum ServerMessages {
     },
     /// Message d'erreur de désérialisation
     ErrorMessage { reason: String },
+    /// Événement critiques diffusés sur le canal dédié
+    CriticalEvent(CriticalServerEvent),
 }
 
 impl crate::network::DeserializeErrorFallback for ServerMessages {
@@ -53,7 +55,7 @@ impl ServerMessages {
         log: &mut Option<ResMut<Log>>,
     ) {
         server.broadcast_message(
-            ServerChannel::ServerMessages,
+            ServerChannel::ReliableState,
             ServerMessages::to_bytes(server_message),
         );
         if let Some(log) = log {
@@ -74,7 +76,7 @@ impl ServerMessages {
     ) {
         server.send_message(
             *client_id,
-            ServerChannel::ServerMessages,
+            ServerChannel::ReliableState,
             ServerMessages::to_bytes(server_message),
         );
         if let Some(log) = log {
@@ -107,6 +109,16 @@ impl ServerMessages {
             );
         }
     }
+}
+
+/// Événements critiques traités immédiatement.
+///
+/// Ces événements sont envoyés sur un canal dédié pour un traitement
+/// en temps réel, séparément des autres messages du serveur.
+#[derive(Debug, Serialize, Deserialize, Component, Clone)]
+pub enum CriticalServerEvent {
+    /// Exemple: tir, pickup, action immédiate (future extension)
+    ProjectileFired { client_id: ClientId },
 }
 
 /// Snapshot des entités réseau et leurs positions.

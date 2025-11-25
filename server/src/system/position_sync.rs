@@ -48,10 +48,7 @@ pub fn broadcast_player_positions(
             aim_direction: aim_direction.0,
         };
 
-        server.broadcast_message(
-            ServerChannel::NetworkedEntities,
-            ServerMessages::to_bytes(&update),
-        );
+        server.broadcast_message(ServerChannel::Snapshots, ServerMessages::to_bytes(&update));
 
         update_count += 1;
     }

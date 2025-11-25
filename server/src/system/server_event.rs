@@ -8,7 +8,7 @@ use bevy::prelude::{
 use bevy_renet::renet::{RenetServer, ServerEvent};
 use game_core::debug_state::Log;
 use game_core::player::{spawn_player, AimDirection, MovementController, PlayerInfo};
-use game_core::server::ServerMessages;
+use game_core::server::{CriticalServerEvent, ServerMessages};
 
 /// Système qui gère les événements de connexion/déconnexion des clients.
 pub fn on_server_event(
@@ -90,6 +90,14 @@ pub fn on_server_event(
                         position,
                         entity,
                     },
+                    &mut server,
+                    &mut log,
+                );
+
+                ServerMessages::broadcast(
+                    &ServerMessages::CriticalEvent(CriticalServerEvent::ProjectileFired {
+                        client_id: *client_id,
+                    }),
                     &mut server,
                     &mut log,
                 );

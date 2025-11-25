@@ -48,38 +48,45 @@ pub fn get_socket(socket_address: SocketAddr) -> UdpSocket {
 /// Canaux réseau utilisés par le serveur pour envoyer des messages aux clients.
 #[derive(Debug, Serialize, Deserialize, Component)]
 pub enum ServerChannel {
-    /// Messages de contrôle (création/suppression de joueurs, notifications)
-    ServerMessages,
-    /// Mises à jour de position et d'état des entités
-    NetworkedEntities,
+    /// Snapshots de position et d'état (unreliable, haute fréquence)
+    Snapshots,
+    /// Événements critiques de gameplay (reliable, faible latence)
+    CriticalEvents,
+    /// Messages de contrôle fiables (spawn/despawn, erreurs)
+    ReliableState,
 }
 
 impl From<ServerChannel> for u8 {
     fn from(channel_id: ServerChannel) -> Self {
         match channel_id {
-            ServerChannel::NetworkedEntities => 0,
-            ServerChannel::ServerMessages => 1,
+            ServerChannel::Snapshots => 0,
+            ServerChannel::CriticalEvents => 1,
+            ServerChannel::ReliableState => 2,
         }
     }
 }
 
 impl ServerChannel {
     /// Configuration des canaux serveur.
-    ///
-    /// - `NetworkedEntities` : canal non fiable pour les snapshots (haute fréquence)
-    /// - `ServerMessages` : canal fiable et ordonné pour les messages de contrôle
     pub fn channel_config() -> Vec<ChannelConfig> {
         vec![
             ChannelConfig {
-                channel_id: ServerChannel::NetworkedEntities.into(),
+                channel_id: ServerChannel::Snapshots.into(),
                 max_memory_usage_bytes: 5 * 1024 * 1024,
                 send_type: SendType::Unreliable,
             },
             ChannelConfig {
-                channel_id: ServerChannel::ServerMessages.into(),
+                channel_id: ServerChannel::CriticalEvents.into(),
+                max_memory_usage_bytes: 2 * 1024 * 1024,
+                send_type: SendType::ReliableOrdered {
+                    resend_time: Duration::from_millis(100),
+                },
+            },
+            ChannelConfig {
+                channel_id: ServerChannel::ReliableState.into(),
                 max_memory_usage_bytes: 5 * 1024 * 1024,
                 send_type: SendType::ReliableOrdered {
-                    resend_time: Duration::from_millis(200),
+                    resend_time: Duration::from_millis(250),
                 },
             },
         ]
@@ -90,38 +97,34 @@ impl ServerChannel {
 pub enum ClientChannel {
     /// Entrées du joueur (haute fréquence)
     Input,
-    /// Commandes ponctuelles (chat, actions)
-    Command,
+    /// Commandes fiables ponctuelles (chat, interactions critiques)
+    ReliableCommand,
 }
 
 impl From<ClientChannel> for u8 {
     fn from(channel_id: ClientChannel) -> Self {
         match channel_id {
-            ClientChannel::Command => 0,
-            ClientChannel::Input => 1,
+            ClientChannel::Input => 0,
+            ClientChannel::ReliableCommand => 1,
         }
     }
 }
 
 impl ClientChannel {
-    /// Configuration des canaux client.
-    ///
-    /// Les deux canaux utilisent `ReliableOrdered` avec `resend_time = Duration::ZERO`
-    /// pour garantir l'ordre et minimiser la latence.
     pub fn channel_config() -> Vec<ChannelConfig> {
         vec![
             ChannelConfig {
-                channel_id: Self::Input.into(),
+                channel_id: ClientChannel::Input.into(),
                 max_memory_usage_bytes: 5 * 1024 * 1024,
                 send_type: SendType::ReliableOrdered {
                     resend_time: Duration::ZERO,
                 },
             },
             ChannelConfig {
-                channel_id: Self::Command.into(),
-                max_memory_usage_bytes: 5 * 1024 * 1024,
+                channel_id: ClientChannel::ReliableCommand.into(),
+                max_memory_usage_bytes: 2 * 1024 * 1024,
                 send_type: SendType::ReliableOrdered {
-                    resend_time: Duration::ZERO,
+                    resend_time: Duration::from_millis(200),
                 },
             },
         ]

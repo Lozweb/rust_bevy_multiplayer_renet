@@ -60,30 +60,8 @@ pub struct AimRig {
     pub source: AimSource,
 }
 
-pub(super) fn plugin(app: &mut App) {
-    app.load_resource::<PlayerAssets>();
-
-    app.add_systems(
-        Update,
-        (record_player_directional_input, record_aim_direction)
-            .in_set(AppSystems::RecordInput)
-            .in_set(PausableSystems),
-    );
-
-    app.insert_resource(PlayerInput::default());
-    app.insert_resource(MouseWorldCoords::default());
-    app.insert_resource(AimDirection::default());
-
-    app.add_systems(Update, input_sync_system.in_set(Connected));
-    app.add_systems(Update, mark_local_player.in_set(Connected));
-    app.configure_sets(Update, Connected.run_if(client_connected));
-}
-
 /// Bundle regroupant les composants physiques du joueur LOCAL uniquement.
 /// Les joueurs distants n'ont PAS de physique côté client pour éviter la désynchronisation.
-///
-/// IMPORTANT : Utilise RigidBody::Dynamic pour des collisions physiques réelles.
-/// La synchronisation est maintenue par une réconciliation agressive vers la position serveur.
 #[derive(Bundle)]
 struct LocalPlayerPhysicsBundle {
     rigid_body: RigidBody,
@@ -102,13 +80,32 @@ impl Default for LocalPlayerPhysicsBundle {
             rigid_body: RigidBody::Dynamic,
             collider: Collider::rectangle(32.0, 32.0),
             mass: Mass(50.0),
-            linear_damping: LinearDamping(1.5), // Réduit de 2.0 pour plus de réactivité
+            linear_damping: LinearDamping(1.5),
             linear_velocity: LinearVelocity::ZERO,
             locked_axes: LockedAxes::ROTATION_LOCKED,
             collision_events: CollisionEventsEnabled,
             debug_render: DebugRender::default().with_collider_color(Color::WHITE),
         }
     }
+}
+
+pub(super) fn plugin(app: &mut App) {
+    app.load_resource::<PlayerAssets>();
+
+    app.add_systems(
+        Update,
+        (record_player_directional_input, record_aim_direction)
+            .in_set(AppSystems::RecordInput)
+            .in_set(PausableSystems),
+    );
+
+    app.insert_resource(PlayerInput::default());
+    app.insert_resource(MouseWorldCoords::default());
+    app.insert_resource(AimDirection::default());
+
+    app.add_systems(Update, input_sync_system.in_set(Connected));
+    app.add_systems(Update, mark_local_player.in_set(Connected));
+    app.configure_sets(Update, Connected.run_if(client_connected));
 }
 
 /// Crée un bundle complet pour l'entité joueur.
@@ -203,10 +200,7 @@ pub fn player(
 fn mark_local_player(
     mut commands: Commands,
     current_client_id: Res<crate::resource::CurrentClientId>,
-    untagged_players: Query<
-        (Entity, &PlayerInfo),
-        (With<Player>, Without<ControlledPlayer>, Without<RigidBody>),
-    >,
+    untagged_players: Query<(Entity, &PlayerInfo), (With<Player>, Without<ControlledPlayer>)>,
 ) {
     for (entity, player_info) in &untagged_players {
         if player_info.id == current_client_id.0 {
@@ -215,7 +209,6 @@ fn mark_local_player(
                 .entity(entity)
                 .insert((ControlledPlayer, LocalPlayerPhysicsBundle::default()));
         } else {
-            // Joueur distant : RigidBody::Static pour être poussable par le joueur local
             info!("Marking player {} as remote (static)", player_info.id);
             commands.entity(entity).insert(RigidBody::Static);
         }

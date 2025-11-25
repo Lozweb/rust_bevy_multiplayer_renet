@@ -30,6 +30,15 @@ impl Default for NetworkedTransform {
     }
 }
 
+/// Paramètres de réconciliation pour le joueur local.
+const LOCAL_RECONCILIATION_SPEED: f32 = 5.0;
+const LOCAL_RECONCILIATION_THRESHOLD: f32 = 15.0;
+
+/// Paramètres pour les joueurs distants.
+const REMOTE_INTERPOLATION_SPEED: f32 = 25.0;
+const AIM_INTERPOLATION_SPEED: f32 = 30.0;
+const TELEPORT_THRESHOLD: f32 = 100.0;
+
 /// Système qui reçoit et applique les mises à jour de position du serveur.
 ///
 /// IMPORTANT : Met à jour TOUS les joueurs (y compris le local) depuis le serveur.
@@ -40,7 +49,7 @@ pub fn receive_position_updates(
     time: Res<Time>,
     mut players: Query<&mut NetworkedTransform, With<Player>>,
 ) {
-    while let Some(message) = client.receive_message(ServerChannel::NetworkedEntities) {
+    while let Some(message) = client.receive_message(ServerChannel::Snapshots) {
         match ServerMessages::from_bytes(&message) {
             ServerMessages::PlayerPositionUpdate {
                 client_id,
@@ -72,7 +81,8 @@ pub fn receive_position_updates(
             }
             ServerMessages::PlayerCreate { .. }
             | ServerMessages::PlayerRemove { .. }
-            | ServerMessages::ErrorMessage { .. } => {}
+            | ServerMessages::ErrorMessage { .. }
+            | ServerMessages::CriticalEvent(_) => {}
         }
     }
 }
@@ -97,63 +107,35 @@ pub fn interpolate_networked_players(
         With<Player>,
     >,
 ) {
-    // Interpolation rapide pour les joueurs distants (30Hz serveur)
-    const INTERPOLATION_SPEED: f32 = 25.0;
-    // Réconciliation très douce pour le joueur local (évite saccades)
-    const LOCAL_RECONCILIATION_SPEED: f32 = 3.0;
-    const AIM_INTERPOLATION_SPEED: f32 = 30.0;
-
-    // Seuil de distance pour déclencher la réconciliation du joueur local
-    // Plus élevé = moins de corrections = mouvement plus fluide
-    const LOCAL_RECONCILIATION_THRESHOLD: f32 = 15.0;
-    // Seuil de téléportation (éviter les cas extrêmes)
-    const TELEPORT_THRESHOLD: f32 = 100.0;
-
     let delta = time.delta_secs();
 
     for (networked, mut transform, mut aim_dir, is_local) in &mut players {
-        let distance = transform.translation.distance(networked.target_position);
+        let target = networked.target_position;
+        let distance = transform.translation.distance(target);
 
         if is_local.is_some() {
-            // JOUEUR LOCAL : Réconciliation douce uniquement si divergence significative
-            // Cela permet au joueur d'avoir sa physique locale tout en se synchronisant avec le serveur
             if distance > TELEPORT_THRESHOLD {
-                // Divergence critique : téléporter immédiatement
-                transform.translation = networked.target_position;
-                trace!(
-                    "Local player teleported to server position (divergence: {})",
-                    distance
-                );
+                transform.translation = target;
             } else if distance > LOCAL_RECONCILIATION_THRESHOLD {
-                // Divergence modérée : réconciliation douce pour éviter les saccades
                 let t = (LOCAL_RECONCILIATION_SPEED * delta).min(1.0);
-                transform.translation = transform.translation.lerp(networked.target_position, t);
-                trace!("Local player reconciling (divergence: {})", distance);
+                transform.translation = transform.translation.lerp(target, t);
             }
-            // Sinon : divergence acceptable, la physique locale prime
+        } else if distance > TELEPORT_THRESHOLD {
+            transform.translation = target;
         } else {
-            // JOUEUR DISTANT : Interpolation normale (pas de physique locale)
-            if distance > TELEPORT_THRESHOLD {
-                transform.translation = networked.target_position;
-            } else {
-                // Interpolation de la position - suit la position serveur autoritaire
-                let t = (INTERPOLATION_SPEED * delta).min(1.0);
-                transform.translation = transform.translation.lerp(networked.target_position, t);
-            }
+            let t = (REMOTE_INTERPOLATION_SPEED * delta).min(1.0);
+            transform.translation = transform.translation.lerp(target, t);
         }
 
-        // Interpolation de la direction de visée pour TOUS les joueurs
-        // (gestion du wrap-around à 2π)
+        // Direction de visée
         let current_aim = aim_dir.0;
         let target_aim = networked.target_aim_direction;
-
         let mut diff = target_aim - current_aim;
         if diff > std::f32::consts::PI {
             diff -= 2.0 * std::f32::consts::PI;
         } else if diff < -std::f32::consts::PI {
             diff += 2.0 * std::f32::consts::PI;
         }
-
         let aim_t = (AIM_INTERPOLATION_SPEED * delta).min(1.0);
         aim_dir.0 = current_aim + diff * aim_t;
     }
