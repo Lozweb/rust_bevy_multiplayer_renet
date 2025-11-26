@@ -30,6 +30,11 @@ pub enum ServerMessages {
     ErrorMessage {
         reason: String,
     },
+    ProjectileSpawned {
+        server_entity: Entity,
+        position: Vec3,
+        direction: f32,
+    },
 }
 
 impl crate::network::DeserializeErrorFallback for ServerMessages {

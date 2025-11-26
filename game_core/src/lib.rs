@@ -8,6 +8,7 @@ pub mod network;
 pub mod player;
 pub mod server;
 pub mod transport;
+pub mod weapon;
 
 #[derive(Component, Debug)]
 pub struct NetworkedTransform {

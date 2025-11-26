@@ -6,7 +6,9 @@ use bevy::prelude::*;
 use bevy_renet::renet::RenetClient;
 use game_core::enemy::{spawn_enemy, EnemyServerEntity};
 use game_core::network::{MessageDeserialize, ServerChannel};
+use game_core::player::AimDirection;
 use game_core::server::ServerMessages;
+use game_core::weapon::{spawn_weapon, Weapon};
 
 pub fn on_client_event(
     current_client_id: Option<Res<CurrentClientId>>,
@@ -86,6 +88,21 @@ pub fn on_client_event(
             }
             ServerMessages::ErrorMessage { reason } => {
                 error!("{}", reason);
+            }
+
+            ServerMessages::ProjectileSpawned {
+                server_entity,
+                position,
+                direction,
+            } => {
+                let _projectil_entitye = spawn_weapon(
+                    &Weapon,
+                    position,
+                    AimDirection(direction),
+                    &mut commands,
+                    &mut meshes,
+                    &mut materials,
+                );
             }
             _ => {}
         }

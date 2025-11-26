@@ -26,16 +26,13 @@ pub fn input_sync_system(
     player_input.shoot = mouse_input.just_pressed(SHOOT);
     player_input.aim_direction = aim_direction.0;
 
-    // Détecte si les inputs de mouvement ont changé
     let movement_changed = previous_input.up != player_input.up
         || previous_input.down != player_input.down
         || previous_input.left != player_input.left
         || previous_input.right != player_input.right;
 
-    // Détecte si la direction de visée a changé significativement (> 0.01 rad ~= 0.57°)
     let aim_changed = (previous_input.aim_direction - player_input.aim_direction).abs() > 0.01;
 
-    // Envoie si : mouvement changé, visée changée, action (jump/shoot)
     let should_send = movement_changed || aim_changed || player_input.jump || player_input.shoot;
     *last_sent += time.delta_secs();
 

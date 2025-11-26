@@ -3,18 +3,21 @@ use bevy::prelude::*;
 use bevy_renet::renet::RenetServer;
 use game_core::client::ClientMessage;
 use game_core::network::{ClientChannel, MessageDeserialize};
-use game_core::player::{AimDirection, MovementController, PlayerInfo};
+use game_core::player::{AimDirection, MovementController};
+use game_core::server::ServerMessages;
+use game_core::weapon::{spawn_weapon, Weapon};
 
 pub fn process_client_inputs(
+    mut commands: Commands,
     mut server: ResMut<RenetServer>,
     lobby: Res<ServerLobby>,
-    mut players: Query<(&PlayerInfo, &mut MovementController, &mut AimDirection)>,
+    mut players: Query<(&Transform, &mut MovementController, &mut AimDirection)>,
 ) {
     for client_id in server.clients_id() {
         while let Some(message) = server.receive_message(client_id, ClientChannel::Input) {
             if let ClientMessage::Input(input) = ClientMessage::from_bytes(&message)
                 && let Some(player_entity) = lobby.get_player(&client_id)
-                && let Ok((_player_info, mut controller, mut aim_direction)) =
+                && let Ok((transform, mut controller, mut aim_direction)) =
                     players.get_mut(*player_entity)
             {
                 let mut movement = Vec2::ZERO;
@@ -32,11 +35,49 @@ pub fn process_client_inputs(
                     movement.x += 1.0;
                 }
 
+                if input.shoot {
+                    handle_shoot(
+                        transform.translation,
+                        *aim_direction,
+                        &mut server,
+                        &mut commands,
+                        &mut None,
+                        &mut None,
+                    );
+                }
+
                 controller.target_intent = movement.normalize_or_zero();
                 aim_direction.0 = input.aim_direction;
             }
         }
     }
+}
+
+pub fn handle_shoot(
+    position: Vec3,
+    aim_direction: AimDirection,
+    server: &mut ResMut<RenetServer>,
+    commands: &mut Commands,
+    meshes: &mut Option<ResMut<Assets<Mesh>>>,
+    materials: &mut Option<ResMut<Assets<ColorMaterial>>>,
+) {
+    let server_entity = spawn_weapon(
+        &Weapon,
+        position,
+        aim_direction,
+        commands,
+        meshes,
+        materials,
+    );
+
+    ServerMessages::broadcast(
+        &ServerMessages::ProjectileSpawned {
+            server_entity,
+            position,
+            direction: aim_direction.0,
+        },
+        server,
+    );
 }
 
 pub fn interpolate_movement_intent(
