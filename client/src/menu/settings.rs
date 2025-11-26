@@ -5,7 +5,7 @@ use bevy::audio::Volume;
 use bevy::input::common_conditions::input_just_pressed;
 use bevy::prelude::*;
 
-pub(super) fn plugin(app: &mut bevy::prelude::App) {
+pub(super) fn plugin(app: &mut App) {
     app.add_systems(OnEnter(Menu::Settings), spawn_settings_menu);
     app.add_systems(
         Update,

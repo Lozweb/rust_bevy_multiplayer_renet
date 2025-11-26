@@ -1,12 +1,3 @@
-//! Gestion des entrées du joueur et traduction en mouvement via un contrôleur de personnage.
-//!
-//! Un contrôleur de personnage est l'ensemble des systèmes qui régissent le mouvement des personnages.
-//!
-//! Dans notre cas, le contrôleur de personnage a la logique suivante :
-//! - Définir l'intention de [`MovementController`] basée sur les entrées directionnelles du clavier.
-//!   Ceci est fait dans le module `player`, car c'est spécifique au personnage joueur.
-//! - Appliquer la rotation du système de visée basée sur [`AimDirection`].
-
 use crate::game::player::{AimRig, Player};
 use crate::{AppSystems, PausableSystems};
 use avian2d::prelude::LinearVelocity;
@@ -22,7 +13,6 @@ pub(super) fn plugin(app: &mut App) {
     );
 }
 
-/// Applique le mouvement du joueur local basé sur le MovementController.
 fn apply_local_movement(
     time: Res<Time>,
     mut movement_query: Query<(&MovementController, &mut LinearVelocity), With<ControlledPlayer>>,

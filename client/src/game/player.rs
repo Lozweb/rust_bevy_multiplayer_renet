@@ -1,9 +1,3 @@
-//! Comportement spécifique au joueur.
-//!
-//! Ce module gère le joueur, son viseur (aim rig) et les entrées de direction.
-//! Il fournit les composants et ressources nécessaires pour contrôler le personnage
-//! du joueur et gérer sa visée avec la souris ou la manette.
-
 use crate::client::input::input_sync_system;
 use crate::client::Connected;
 use crate::game::camera::MainCamera;
@@ -35,33 +29,19 @@ pub(crate) const SHOOT: MouseButton = MouseButton::Left;
 #[reflect(Component)]
 pub struct Player;
 
-/// Source de la direction de visée.
-///
-/// Détermine si la visée provient de la souris ou d'une manette de jeu.
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Reflect)]
 pub enum AimSource {
-    /// Visée contrôlée par la souris.
     Mouse,
-    /// Visée contrôlée par la manette.
     Gamepad,
 }
 
-/// Composant de viseur pour le personnage joueur.
-///
-/// Gère le cercle de visée et la croix de visée qui suivent la direction de la souris.
-/// Le viseur tourne autour du joueur pour indiquer où le joueur vise.
 #[derive(Component, Debug, Reflect)]
 #[reflect(Component)]
 pub struct AimRig {
-    /// Le rayon du cercle de visée en pixels.
     pub radius: f32,
-
-    /// La source de la direction de visée (souris ou manette).
     pub source: AimSource,
 }
 
-/// Bundle regroupant les composants physiques du joueur LOCAL uniquement.
-/// Les joueurs distants n'ont PAS de physique côté client pour éviter la désynchronisation.
 #[derive(Bundle)]
 struct LocalPlayerPhysicsBundle {
     rigid_body: RigidBody,
@@ -108,21 +88,6 @@ pub(super) fn plugin(app: &mut App) {
     app.configure_sets(Update, Connected.run_if(client_connected));
 }
 
-/// Crée un bundle complet pour l'entité joueur.
-///
-/// # Arguments
-///
-/// * `max_speed` - Vitesse maximale de déplacement du joueur
-/// * `materials` - Ressource des matériaux pour créer les visuels
-/// * `meshes` - Ressource des meshes pour créer les formes
-///
-/// # Retour
-///
-/// Un bundle contenant tous les composants nécessaires au joueur :
-/// - Composants de rendu (mesh, matériaux)
-/// - Composants de physique (rigidbody, collider)
-/// - Contrôleur de mouvement
-/// - Système de visée (AimRig avec cercle et croix)
 pub fn player(
     client_id: ClientId,
     position: Vec3,
@@ -191,9 +156,6 @@ pub fn player(
         )],
     )
 }
-
-/// Observer qui marque automatiquement un joueur lors de son spawn.
-/// S'exécute UNE SEULE FOIS par joueur au moment de l'ajout de PlayerInfo.
 fn mark_local_player(
     trigger: On<Add, PlayerInfo>,
     mut commands: Commands,
@@ -224,7 +186,6 @@ fn record_aim_direction(
     >,
     mut aim_direction_resource: ResMut<AimDirection>,
 ) {
-    // Si aucun joueur contrôlé n'existe, ne rien faire
     let Some((player_transform, mut aim_direction)) = player_query.iter_mut().next() else {
         return;
     };
@@ -265,23 +226,17 @@ fn record_player_directional_input(
     }
     let intent = intent.normalize_or_zero();
 
-    // Appliquer uniquement au joueur contrôlé localement
     for mut controller in &mut controller_query {
         controller.intent = intent;
     }
 }
 
-/// Ressource contenant les assets du joueur.
-///
-/// Charge et stocke les images, sons et autres ressources utilisées par le joueur.
-/// Cette ressource est automatiquement chargée au démarrage du plugin.
 #[derive(Resource, Asset, Clone, Reflect)]
 #[reflect(Resource)]
 pub struct PlayerAssets {
     #[dependency]
     ducky: Handle<Image>,
 
-    /// Liste des sons de pas utilisés pour le déplacement du joueur.
     #[dependency]
     pub steps: Vec<Handle<AudioSource>>,
 }

@@ -27,7 +27,6 @@ impl FromWorld for LevelAssets {
     }
 }
 
-/// Système qui spawn le niveau principal.
 pub fn spawn_level(
     mut commands: Commands,
     level_assets: Res<LevelAssets>,
@@ -48,16 +47,13 @@ pub fn spawn_level(
                 music(level_assets.music.clone()),
             ));
 
-            // Ajouter les murs visuels (correspond au serveur)
             let wall_material = materials.add(ColorMaterial::from(Color::srgb(0.3, 0.3, 0.4)));
             let obstacle_material = materials.add(ColorMaterial::from(Color::srgb(0.5, 0.3, 0.3)));
 
-            // Dimensions de l'arène (identiques au serveur)
             let arena_width = 1200.0;
             let arena_height = 800.0;
             let wall_thickness = 20.0;
 
-            // Mur du haut
             parent.spawn((
                 Name::new("WallTop"),
                 Mesh2d(meshes.add(Rectangle::new(arena_width, wall_thickness))),
@@ -67,7 +63,6 @@ pub fn spawn_level(
                 Collider::rectangle(arena_width, wall_thickness),
             ));
 
-            // Mur du bas
             parent.spawn((
                 Name::new("WallBottom"),
                 Mesh2d(meshes.add(Rectangle::new(arena_width, wall_thickness))),
@@ -77,7 +72,6 @@ pub fn spawn_level(
                 Collider::rectangle(arena_width, wall_thickness),
             ));
 
-            // Mur de gauche
             parent.spawn((
                 Name::new("WallLeft"),
                 Mesh2d(meshes.add(Rectangle::new(wall_thickness, arena_height))),
@@ -87,7 +81,6 @@ pub fn spawn_level(
                 Collider::rectangle(wall_thickness, arena_height),
             ));
 
-            // Mur de droite
             parent.spawn((
                 Name::new("WallRight"),
                 Mesh2d(meshes.add(Rectangle::new(wall_thickness, arena_height))),
@@ -97,7 +90,6 @@ pub fn spawn_level(
                 Collider::rectangle(wall_thickness, arena_height),
             ));
 
-            // Obstacle central
             parent.spawn((
                 Name::new("CentralObstacle"),
                 Mesh2d(meshes.add(Rectangle::new(100.0, 100.0))),
@@ -107,7 +99,6 @@ pub fn spawn_level(
                 Collider::rectangle(100.0, 100.0),
             ));
 
-            // Obstacles supplémentaires
             parent.spawn((
                 Name::new("ObstacleLeft"),
                 Mesh2d(meshes.add(Rectangle::new(80.0, 80.0))),

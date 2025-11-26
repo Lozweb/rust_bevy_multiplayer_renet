@@ -24,10 +24,6 @@ fn spawn_camera(mut commands: Commands) {
     ));
 }
 
-/// Système qui fait suivre la caméra au joueur local.
-///
-/// La caméra suit uniquement le joueur marqué avec `ControlledPlayer`,
-/// c'est-à-dire le joueur contrôlé par ce client.
 fn camera_follow(
     player_query: Query<&Transform, (With<Player>, With<ControlledPlayer>, Without<Camera2d>)>,
     mut camera_query: Query<&mut Transform, With<Camera2d>>,

@@ -32,25 +32,14 @@ pub fn receive_position_updates(
                 velocity,
                 aim_direction,
             } => {
-                if let Some(player_entities) = lobby.get_player_entities(&client_id) {
-                    if let Ok(mut networked_transform) =
+                if let Some(player_entities) = lobby.get_player_entities(&client_id)
+                    && let Ok(mut networked_transform) =
                         players.get_mut(player_entities.client_entity)
-                    {
-                        networked_transform.target_position = position;
-                        networked_transform.velocity = velocity;
-                        networked_transform.target_aim_direction = aim_direction;
-                        networked_transform.last_update_time = time.elapsed_secs();
-
-                        trace!(
-                            "Updated target for player {}: {:?}, aim: {}",
-                            client_id, position, aim_direction
-                        );
-                    }
-                } else {
-                    trace!(
-                        "Received position update for unknown player {}, ignoring",
-                        client_id
-                    );
+                {
+                    networked_transform.target_position = position;
+                    networked_transform.velocity = velocity;
+                    networked_transform.target_aim_direction = aim_direction;
+                    networked_transform.last_update_time = time.elapsed_secs();
                 }
             }
             ServerMessages::EnemyPositions(enemies_position) => {
@@ -60,11 +49,6 @@ pub fn receive_position_updates(
                     {
                         networked_transform.target_position = position;
                         networked_transform.last_update_time = time.elapsed_secs();
-
-                        trace!(
-                            "Updated target for enemy {:?}: {:?}",
-                            server_entity, position
-                        );
                     }
                 }
             }
@@ -121,36 +105,19 @@ pub fn interpolate_networked_players(
 
 pub fn interpolate_networked_enemies(
     time: Res<Time>,
-    mut enemies: Query<
-        (Entity, &NetworkedTransform, &mut Transform),
-        (With<Enemy>, Without<Player>),
-    >,
+    mut enemies: Query<(&NetworkedTransform, &mut Transform), (With<Enemy>, Without<Player>)>,
 ) {
     let delta = time.delta_secs();
-    let enemy_count = enemies.iter().count();
 
-    if enemy_count > 0 {
-        debug!("🎬 [CLIENT] Interpolating {} enemy/enemies", enemy_count);
-    }
-
-    for (entity, networked, mut transform) in &mut enemies {
+    for (networked, mut transform) in &mut enemies {
         let target = networked.target_position;
         let distance = transform.translation.distance(target);
 
         if distance > TELEPORT_THRESHOLD {
-            info!(
-                "⚡ [CLIENT] Enemy {:?} teleporting: {:?} -> {:?} (dist: {:.2})",
-                entity, transform.translation, target, distance
-            );
             transform.translation = target;
         } else if distance > 0.01 {
             let t = (REMOTE_INTERPOLATION_SPEED * delta).min(1.0);
-            let old_pos = transform.translation;
             transform.translation = transform.translation.lerp(target, t);
-            debug!(
-                "🎯 [CLIENT] Enemy {:?} interpolating: {:?} -> {:?} (target: {:?}, dist: {:.2}, t: {:.3})",
-                entity, old_pos, transform.translation, target, distance, t
-            );
         }
     }
 }

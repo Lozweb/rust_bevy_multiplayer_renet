@@ -7,10 +7,6 @@ use game_core::player::{AimDirection, PlayerInput};
 
 const INPUT_KEEPALIVE: f32 = 0.1;
 
-/// Système qui enregistre les entrées locales et les envoie au serveur.
-///
-/// Optimisé pour n'envoyer que lorsque les inputs changent ou périodiquement
-/// pour maintenir la synchronisation.
 pub fn input_sync_system(
     mut player_input: ResMut<PlayerInput>,
     keyboard_input: Res<ButtonInput<KeyCode>>,

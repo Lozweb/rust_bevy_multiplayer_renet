@@ -4,7 +4,7 @@ use crate::resource::{ClientLobby, CurrentClientId, PlayerEntities};
 use bevy::log::error;
 use bevy::prelude::*;
 use bevy_renet::renet::RenetClient;
-use game_core::enemy::spawn_enemy;
+use game_core::enemy::{spawn_enemy, Enemy};
 use game_core::network::{MessageDeserialize, ServerChannel};
 use game_core::server::ServerMessages;
 
@@ -78,6 +78,7 @@ pub fn on_client_event(
                 position,
             } => {
                 let e1 = spawn_enemy(&mut commands, position, &mut meshes, &mut materials);
+                commands.entity(e1).insert(Enemy { server_entity });
                 lobby.add_enemy(server_entity, e1);
                 info!("Enemy spawned: {server_entity:?} at {position:?}");
             }

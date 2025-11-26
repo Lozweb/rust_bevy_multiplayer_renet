@@ -76,21 +76,15 @@ impl Plugin for AppPlugin {
     }
 }
 
-/// Ensembles de systèmes ordonnés de l'application.
 #[derive(SystemSet, Debug, Clone, Copy, Eq, PartialEq, Hash, PartialOrd, Ord)]
 enum AppSystems {
-    /// Mise à jour des timers
     TickTimers,
-    /// Enregistrement des entrées utilisateur
     RecordInput,
-    /// Mise à jour générale
     Update,
 }
 
-/// État de pause du jeu.
 #[derive(States, Copy, Clone, Eq, PartialEq, Hash, Debug, Default)]
 struct Pause(pub bool);
 
-/// Ensemble de systèmes pausables (ne s'exécutent que si le jeu n'est pas en pause).
 #[derive(SystemSet, Copy, Clone, Eq, PartialEq, Hash, Debug)]
 struct PausableSystems;

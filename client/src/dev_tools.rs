@@ -18,7 +18,6 @@ struct DebugState {
 pub(super) fn plugin(app: &mut App) {
     app.init_resource::<DebugState>();
 
-    // Configure le volume à 10% en mode dev
     app.insert_resource(GlobalVolume {
         volume: Volume::Linear(0.1),
     });
