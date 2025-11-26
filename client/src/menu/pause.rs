@@ -1,9 +1,10 @@
+use crate::client::event::DisconnectUser;
 use crate::menu::Menu;
 use crate::screens::Screen;
 use crate::theme::widget;
 use bevy::prelude::*;
 
-pub(super) fn plugin(app: &mut bevy::prelude::App) {
+pub(super) fn plugin(app: &mut App) {
     crate::menu::setup_menu(app, Menu::Pause, spawn_pause_menu);
 }
 
@@ -28,6 +29,11 @@ fn close_menu(_: On<Pointer<Click>>, mut next_menu: ResMut<NextState<Menu>>) {
     next_menu.set(Menu::None);
 }
 
-fn quit_to_title(_: On<Pointer<Click>>, mut next_screen: ResMut<NextState<Screen>>) {
+fn quit_to_title(
+    _: On<Pointer<Click>>,
+    mut next_screen: ResMut<NextState<Screen>>,
+    mut commands: Commands,
+) {
+    commands.trigger(DisconnectUser);
     next_screen.set(Screen::Title);
 }

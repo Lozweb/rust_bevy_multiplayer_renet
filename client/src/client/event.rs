@@ -4,8 +4,9 @@ use crate::resource::{ClientLobby, CurrentClientId, PlayerEntities};
 use bevy::log::error;
 use bevy::prelude::*;
 use bevy_renet::renet::RenetClient;
+use game_core::enemy::spawn_enemy;
 use game_core::network::{MessageDeserialize, ServerChannel};
-use game_core::server::{CriticalServerEvent, ServerMessages};
+use game_core::server::ServerMessages;
 
 /// Système qui traite les événements reçus du serveur.
 pub fn on_client_event(
@@ -72,25 +73,26 @@ pub fn on_client_event(
                     commands.entity(client_entity).despawn();
                 }
             }
+            ServerMessages::EnemySpawned {
+                server_entity,
+                position,
+            } => {
+                let e1 = spawn_enemy(&mut commands, position, &mut meshes, &mut materials);
+                lobby.add_enemy(server_entity, e1);
+                info!("Enemy spawned: {server_entity:?} at {position:?}");
+            }
             ServerMessages::ErrorMessage { reason } => {
                 error!("{}", reason);
             }
-            ServerMessages::PlayerPositionUpdate { .. } => {}
-            ServerMessages::CriticalEvent(payload) => handle_critical_event(payload),
-        }
-    }
-
-    while let Some(event) = client.receive_message(ServerChannel::CriticalEvents) {
-        if let ServerMessages::CriticalEvent(payload) = ServerMessages::from_bytes(&event) {
-            handle_critical_event(payload);
+            _ => {}
         }
     }
 }
 
-fn handle_critical_event(event: CriticalServerEvent) {
-    match event {
-        CriticalServerEvent::ProjectileFired { client_id } => {
-            info!("Projectile tiré par {:?}", client_id);
-        }
-    }
+#[derive(Event)]
+pub struct DisconnectUser;
+
+pub fn handle_disconnect_user(_trigger: On<DisconnectUser>, mut client: ResMut<RenetClient>) {
+    client.disconnect();
+    info!("Déconnexion du serveur demandée par l'utilisateur");
 }

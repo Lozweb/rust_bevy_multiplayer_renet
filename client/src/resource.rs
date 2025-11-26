@@ -16,6 +16,7 @@ pub struct PlayerEntities {
 pub struct ClientLobby {
     /// Mappe l'identifiant d'un client aux entités du joueur
     pub players: HashMap<ClientId, PlayerEntities>,
+    pub ennemies: HashMap<Entity, Entity>,
 }
 
 impl ClientLobby {
@@ -24,14 +25,29 @@ impl ClientLobby {
         self.players.insert(*client_id, entities);
     }
 
+    /// Ajoute un ennemi au lobby client.
+    pub fn add_enemy(&mut self, server_entity: Entity, client_entity: Entity) {
+        self.ennemies.insert(server_entity, client_entity);
+    }
+
     /// Supprime un joueur du lobby client.
     pub fn remove_player(&mut self, client_id: &ClientId) -> Option<PlayerEntities> {
         self.players.remove(client_id)
     }
 
+    /// Supprime un ennemi du lobby client.
+    pub fn remove_enemy(&mut self, server_entity: &Entity) -> Option<Entity> {
+        self.ennemies.remove(server_entity)
+    }
+
     /// Récupère les entités associées à un client.
     pub fn get_player_entities(&self, client_id: &ClientId) -> Option<&PlayerEntities> {
         self.players.get(client_id)
+    }
+
+    /// Récupère l'entité client associée à une entité serveur d'ennemi.
+    pub fn get_enemy_entity(&self, server_entity: &Entity) -> Option<&Entity> {
+        self.ennemies.get(server_entity)
     }
 
     /// Recherche un client par son entité serveur.

@@ -5,7 +5,6 @@
 //! du joueur et gérer sa visée avec la souris ou la manette.
 
 use crate::client::input::input_sync_system;
-use crate::client::position_sync::NetworkedTransform;
 use crate::client::Connected;
 use crate::game::camera::MainCamera;
 use crate::{asset_tracking::LoadResource, AppSystems, PausableSystems};
@@ -22,6 +21,7 @@ use bevy_renet::renet::ClientId;
 use game_core::player::{
     AimDirection, ControlledPlayer, MouseWorldCoords, MovementController, PlayerInfo, PlayerInput,
 };
+use game_core::NetworkedTransform;
 
 pub(crate) const UP: [KeyCode; 2] = [KeyCode::KeyW, KeyCode::ArrowUp];
 pub(crate) const DOWN: [KeyCode; 2] = [KeyCode::KeyS, KeyCode::ArrowDown];
@@ -104,7 +104,7 @@ pub(super) fn plugin(app: &mut App) {
     app.insert_resource(AimDirection::default());
 
     app.add_systems(Update, input_sync_system.in_set(Connected));
-    app.add_systems(Update, mark_local_player.in_set(Connected));
+    app.add_observer(mark_local_player);
     app.configure_sets(Update, Connected.run_if(client_connected));
 }
 
@@ -192,17 +192,17 @@ pub fn player(
     )
 }
 
-/// Marque automatiquement le joueur local avec le composant ControlledPlayer.
-///
-/// Ce système identifie les joueurs qui ont un PlayerInfo.id correspondant au
-/// CurrentClientId et leur ajoute le composant ControlledPlayer ainsi que la physique Dynamic.
-/// Les joueurs distants reçoivent un RigidBody::Static pour pouvoir être poussés par le local.
+/// Observer qui marque automatiquement un joueur lors de son spawn.
+/// S'exécute UNE SEULE FOIS par joueur au moment de l'ajout de PlayerInfo.
 fn mark_local_player(
+    trigger: On<Add, PlayerInfo>,
     mut commands: Commands,
     current_client_id: Res<crate::resource::CurrentClientId>,
-    untagged_players: Query<(Entity, &PlayerInfo), (With<Player>, Without<ControlledPlayer>)>,
+    players: Query<&PlayerInfo>,
 ) {
-    for (entity, player_info) in &untagged_players {
+    let entity = trigger.entity;
+
+    if let Ok(player_info) = players.get(entity) {
         if player_info.id == current_client_id.0 {
             info!("Marking player {} as locally controlled", player_info.id);
             commands

@@ -13,33 +13,28 @@ pub fn process_client_inputs(
 ) {
     for client_id in server.clients_id() {
         while let Some(message) = server.receive_message(client_id, ClientChannel::Input) {
-            match ClientMessage::from_bytes(&message) {
-                ClientMessage::Input(input) => {
-                    if let Some(player_entity) = lobby.get_player(&client_id) {
-                        if let Ok((_player_info, mut controller, mut aim_direction)) =
-                            players.get_mut(*player_entity)
-                        {
-                            let mut movement = Vec2::ZERO;
+            if let ClientMessage::Input(input) = ClientMessage::from_bytes(&message)
+                && let Some(player_entity) = lobby.get_player(&client_id)
+                && let Ok((_player_info, mut controller, mut aim_direction)) =
+                    players.get_mut(*player_entity)
+            {
+                let mut movement = Vec2::ZERO;
 
-                            if input.up {
-                                movement.y += 1.0;
-                            }
-                            if input.down {
-                                movement.y -= 1.0;
-                            }
-                            if input.left {
-                                movement.x -= 1.0;
-                            }
-                            if input.right {
-                                movement.x += 1.0;
-                            }
-
-                            controller.target_intent = movement.normalize_or_zero();
-                            aim_direction.0 = input.aim_direction;
-                        }
-                    }
+                if input.up {
+                    movement.y += 1.0;
                 }
-                ClientMessage::Command(_) | ClientMessage::ErrorMessage { .. } => {}
+                if input.down {
+                    movement.y -= 1.0;
+                }
+                if input.left {
+                    movement.x -= 1.0;
+                }
+                if input.right {
+                    movement.x += 1.0;
+                }
+
+                controller.target_intent = movement.normalize_or_zero();
+                aim_direction.0 = input.aim_direction;
             }
         }
     }

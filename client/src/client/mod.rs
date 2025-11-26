@@ -2,6 +2,7 @@ pub(crate) mod event;
 pub mod input;
 pub mod position_sync;
 
+use crate::client::event::handle_disconnect_user;
 use crate::resource::ClientLobby;
 use bevy::prelude::*;
 use bevy_renet::netcode::{NetcodeClientPlugin, NetcodeTransportError};
@@ -15,6 +16,8 @@ pub(super) fn plugin(app: &mut App) {
     app.insert_resource(ClientLobby::default());
 
     app.add_systems(Update, panic_on_error_system);
+
+    app.add_observer(handle_disconnect_user);
 }
 
 #[allow(clippy::never_loop)]

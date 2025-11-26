@@ -3,19 +3,19 @@ use bevy::asset::Assets;
 use bevy::math::Vec3;
 use bevy::mesh::Mesh;
 use bevy::prelude::{
-    info, ColorMaterial, Commands, Entity, MessageReader, Query, ResMut, Transform,
+    info, ColorMaterial, Commands, Entity, MessageReader, Query, ResMut, Transform, With,
 };
 use bevy_renet::renet::{RenetServer, ServerEvent};
-use game_core::debug_state::Log;
+use game_core::enemy::Enemy;
 use game_core::player::{spawn_player, AimDirection, MovementController, PlayerInfo};
-use game_core::server::{CriticalServerEvent, ServerMessages};
+use game_core::server::ServerMessages;
 
 /// Système qui gère les événements de connexion/déconnexion des clients.
 pub fn on_server_event(
-    mut players: Query<(Entity, &PlayerInfo, &Transform)>,
+    players: Query<(Entity, &PlayerInfo, &Transform)>,
+    enemies: Query<(Entity, &Transform), With<Enemy>>,
     mut server: ResMut<RenetServer>,
     mut lobby: ResMut<ServerLobby>,
-    mut log: Option<ResMut<Log>>,
     mut meshes: Option<ResMut<Assets<Mesh>>>,
     mut materials: Option<ResMut<Assets<ColorMaterial>>>,
     mut server_event_reader: MessageReader<ServerEvent>,
@@ -24,7 +24,7 @@ pub fn on_server_event(
     for event in server_event_reader.read() {
         match event {
             ServerEvent::ClientConnected { client_id } => {
-                ServerMessages::client_logon(client_id, &mut log);
+                ServerMessages::client_logon(client_id);
 
                 // Générer une position de spawn aléatoire qui évite le centre et les obstacles
                 // Spawn dans un des 4 quadrants de l'arène
@@ -72,7 +72,7 @@ pub fn on_server_event(
                     client_id, entity, position
                 );
 
-                for (entity, player_info, transform) in players.iter_mut() {
+                for (entity, player_info, transform) in players.iter() {
                     ServerMessages::send(
                         client_id,
                         &ServerMessages::PlayerCreate {
@@ -81,9 +81,20 @@ pub fn on_server_event(
                             entity,
                         },
                         &mut server,
-                        &mut log,
                     );
                 }
+
+                for (entity, transform) in enemies.iter() {
+                    ServerMessages::send(
+                        client_id,
+                        &ServerMessages::EnemySpawned {
+                            server_entity: entity,
+                            position: transform.translation,
+                        },
+                        &mut server,
+                    );
+                }
+
                 ServerMessages::broadcast(
                     &ServerMessages::PlayerCreate {
                         client_id: *client_id,
@@ -91,19 +102,10 @@ pub fn on_server_event(
                         entity,
                     },
                     &mut server,
-                    &mut log,
-                );
-
-                ServerMessages::broadcast(
-                    &ServerMessages::CriticalEvent(CriticalServerEvent::ProjectileFired {
-                        client_id: *client_id,
-                    }),
-                    &mut server,
-                    &mut log,
                 );
             }
             ServerEvent::ClientDisconnected { client_id, .. } => {
-                ServerMessages::client_logoff(client_id, &mut log);
+                ServerMessages::client_logoff(client_id);
 
                 if let Some(entity) = lobby.get_player(client_id) {
                     commands.entity(*entity).despawn();
@@ -115,7 +117,6 @@ pub fn on_server_event(
                         client_id: *client_id,
                     },
                     &mut server,
-                    &mut log,
                 );
             }
         }

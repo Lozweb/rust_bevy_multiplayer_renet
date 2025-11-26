@@ -49,7 +49,6 @@ pub fn spawn_level(
             ));
 
             // Ajouter les murs visuels (correspond au serveur)
-            // Note: Pas de physique côté client, seulement visuel
             let wall_material = materials.add(ColorMaterial::from(Color::srgb(0.3, 0.3, 0.4)));
             let obstacle_material = materials.add(ColorMaterial::from(Color::srgb(0.5, 0.3, 0.3)));
 

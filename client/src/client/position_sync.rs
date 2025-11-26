@@ -2,33 +2,11 @@ use crate::game::player::Player;
 use crate::resource::ClientLobby;
 use bevy::prelude::*;
 use bevy_renet::renet::RenetClient;
+use game_core::enemy::Enemy;
 use game_core::network::{MessageDeserialize, ServerChannel};
 use game_core::player::{AimDirection, ControlledPlayer};
 use game_core::server::ServerMessages;
-
-/// Composant stockant les informations pour l'interpolation de position.
-#[derive(Component, Debug)]
-pub struct NetworkedTransform {
-    /// Position cible à atteindre
-    pub target_position: Vec3,
-    /// Vélocité du joueur (pour extrapolation)
-    pub velocity: Vec2,
-    /// Direction de visée cible
-    pub target_aim_direction: f32,
-    /// Timestamp de la dernière mise à jour reçue
-    pub last_update_time: f32,
-}
-
-impl Default for NetworkedTransform {
-    fn default() -> Self {
-        Self {
-            target_position: Vec3::ZERO,
-            velocity: Vec2::ZERO,
-            target_aim_direction: 0.0,
-            last_update_time: 0.0,
-        }
-    }
-}
+use game_core::NetworkedTransform;
 
 /// Paramètres de réconciliation pour le joueur local.
 const LOCAL_RECONCILIATION_SPEED: f32 = 5.0;
@@ -39,15 +17,12 @@ const REMOTE_INTERPOLATION_SPEED: f32 = 25.0;
 const AIM_INTERPOLATION_SPEED: f32 = 30.0;
 const TELEPORT_THRESHOLD: f32 = 100.0;
 
-/// Système qui reçoit et applique les mises à jour de position du serveur.
-///
-/// IMPORTANT : Met à jour TOUS les joueurs (y compris le local) depuis le serveur.
-/// Architecture full server-authoritative pour zéro désynchronisation.
 pub fn receive_position_updates(
     mut client: ResMut<RenetClient>,
     lobby: Res<ClientLobby>,
     time: Res<Time>,
     mut players: Query<&mut NetworkedTransform, With<Player>>,
+    mut enemies: Query<&mut NetworkedTransform, (With<Enemy>, Without<Player>)>,
 ) {
     while let Some(message) = client.receive_message(ServerChannel::Snapshots) {
         match ServerMessages::from_bytes(&message) {
@@ -57,7 +32,6 @@ pub fn receive_position_updates(
                 velocity,
                 aim_direction,
             } => {
-                // Mettre à jour TOUS les joueurs (local ET distants)
                 if let Some(player_entities) = lobby.get_player_entities(&client_id) {
                     if let Ok(mut networked_transform) =
                         players.get_mut(player_entities.client_entity)
@@ -79,22 +53,26 @@ pub fn receive_position_updates(
                     );
                 }
             }
-            ServerMessages::PlayerCreate { .. }
-            | ServerMessages::PlayerRemove { .. }
-            | ServerMessages::ErrorMessage { .. }
-            | ServerMessages::CriticalEvent(_) => {}
+            ServerMessages::EnemyPositions(enemies_position) => {
+                for (server_entity, position) in enemies_position {
+                    if let Some(client_entity) = lobby.get_enemy_entity(&server_entity)
+                        && let Ok(mut networked_transform) = enemies.get_mut(*client_entity)
+                    {
+                        networked_transform.target_position = position;
+                        networked_transform.last_update_time = time.elapsed_secs();
+
+                        trace!(
+                            "Updated target for enemy {:?}: {:?}",
+                            server_entity, position
+                        );
+                    }
+                }
+            }
+            _ => { /* Ignorer les autres messages */ }
         }
     }
 }
 
-/// Système d'interpolation qui rend les mouvements des joueurs distants fluides.
-///
-/// IMPORTANT : Les joueurs distants n'ont PAS de physique côté client.
-/// Ce système déplace directement leur Transform vers la position autoritaire du serveur.
-///
-/// Le joueur local utilise une RÉCONCILIATION DOUCE : si la divergence avec le serveur
-/// est trop grande (>5 unités), on corrige progressivement pour éviter les saccades tout
-/// en maintenant la synchronisation.
 pub fn interpolate_networked_players(
     time: Res<Time>,
     mut players: Query<
@@ -138,5 +116,41 @@ pub fn interpolate_networked_players(
         }
         let aim_t = (AIM_INTERPOLATION_SPEED * delta).min(1.0);
         aim_dir.0 = current_aim + diff * aim_t;
+    }
+}
+
+pub fn interpolate_networked_enemies(
+    time: Res<Time>,
+    mut enemies: Query<
+        (Entity, &NetworkedTransform, &mut Transform),
+        (With<Enemy>, Without<Player>),
+    >,
+) {
+    let delta = time.delta_secs();
+    let enemy_count = enemies.iter().count();
+
+    if enemy_count > 0 {
+        debug!("🎬 [CLIENT] Interpolating {} enemy/enemies", enemy_count);
+    }
+
+    for (entity, networked, mut transform) in &mut enemies {
+        let target = networked.target_position;
+        let distance = transform.translation.distance(target);
+
+        if distance > TELEPORT_THRESHOLD {
+            info!(
+                "⚡ [CLIENT] Enemy {:?} teleporting: {:?} -> {:?} (dist: {:.2})",
+                entity, transform.translation, target, distance
+            );
+            transform.translation = target;
+        } else if distance > 0.01 {
+            let t = (REMOTE_INTERPOLATION_SPEED * delta).min(1.0);
+            let old_pos = transform.translation;
+            transform.translation = transform.translation.lerp(target, t);
+            debug!(
+                "🎯 [CLIENT] Enemy {:?} interpolating: {:?} -> {:?} (target: {:?}, dist: {:.2}, t: {:.3})",
+                entity, old_pos, transform.translation, target, distance, t
+            );
+        }
     }
 }

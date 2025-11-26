@@ -1,13 +1,17 @@
 use crate::resource::server_lobby::ServerLobby;
 use crate::resource::ServerConfig;
+use crate::system::enemies::spawn_initial_enemies;
 use crate::system::input_handler::{
     apply_movement, interpolate_movement_intent, process_client_inputs,
 };
 use crate::system::level::setup_level;
-use crate::system::position_sync::{broadcast_player_positions, PositionSyncTimer};
+use crate::system::position_sync::{
+    broadcast_enemy_positions, broadcast_player_positions, EnemiesPositionTimer,
+    PlayersPositionTimer,
+};
 use crate::system::server_event::on_server_event;
 use avian2d::PhysicsPlugins;
-use bevy::app::{App, Startup, Update};
+use bevy::app::{App, FixedUpdate, Startup, Update};
 use bevy::prelude::{IntoScheduleConfigs, Res};
 use bevy_renet::netcode::NetcodeServerPlugin;
 use bevy_renet::renet::RenetServer;
@@ -27,9 +31,10 @@ pub(crate) fn plugin(app: &mut App) {
     app.insert_resource(server);
     app.insert_resource(transport);
     app.insert_resource(ServerLobby::default());
-    app.insert_resource(PositionSyncTimer::default());
+    app.insert_resource(PlayersPositionTimer::default());
+    app.insert_resource(EnemiesPositionTimer::default());
 
-    app.add_systems(Startup, (setup_server, setup_level));
+    app.add_systems(Startup, (setup_server, setup_level, spawn_initial_enemies));
     app.add_systems(Update, on_server_event);
     app.add_systems(Update, process_client_inputs);
     app.add_systems(
@@ -38,6 +43,7 @@ pub(crate) fn plugin(app: &mut App) {
     );
     app.add_systems(Update, apply_movement.after(interpolate_movement_intent));
     app.add_systems(Update, broadcast_player_positions.after(apply_movement));
+    app.add_systems(FixedUpdate, broadcast_enemy_positions);
 }
 
 /// Système de démarrage : affiche les informations du serveur.
