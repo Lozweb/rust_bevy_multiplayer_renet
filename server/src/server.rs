@@ -19,7 +19,6 @@ use game_core::network::connection_config;
 use game_core::transport::setup_server_transport;
 use tracing::info;
 
-/// Plugin principal du serveur.
 pub(crate) fn plugin(app: &mut App) {
     app.add_plugins(NetcodeServerPlugin);
     app.add_plugins(PhysicsPlugins::default());
@@ -46,7 +45,6 @@ pub(crate) fn plugin(app: &mut App) {
     app.add_systems(FixedUpdate, broadcast_enemy_positions);
 }
 
-/// Système de démarrage : affiche les informations du serveur.
 fn setup_server(config: Res<ServerConfig>) {
     info!(
         "Serveur démarré en mode console sur le port {}",

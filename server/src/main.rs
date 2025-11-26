@@ -11,16 +11,12 @@ use bevy::MinimalPlugins;
 use bevy_renet::RenetServerPlugin;
 use clap::Parser;
 
-/// Point d'entrée du serveur.
-///
-/// Le serveur fonctionne uniquement en mode console (headless).
 fn main() {
     let args = ServerArgs::parse();
     let config = ServerConfig::new(args.port);
 
     let mut app = App::new();
 
-    // Configuration minimale pour un serveur headless
     app.add_plugins(MinimalPlugins)
         .add_plugins(LogPlugin::default())
         .add_plugins(bevy::transform::TransformPlugin)

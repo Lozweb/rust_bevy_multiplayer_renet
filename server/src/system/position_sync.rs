@@ -32,10 +32,6 @@ impl Default for EnemiesPositionTimer {
     }
 }
 
-/// Système qui diffuse les positions de tous les joueurs à tous les clients.
-///
-/// S'exécute toutes les 50ms (20 Hz) sur le canal `NetworkedEntities` (unreliable)
-/// pour réduire la latence et optimiser la bande passante.
 pub fn broadcast_player_positions(
     time: Res<Time>,
     mut timer: ResMut<PlayersPositionTimer>,

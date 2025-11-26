@@ -10,7 +10,6 @@ use game_core::enemy::Enemy;
 use game_core::player::{spawn_player, AimDirection, MovementController, PlayerInfo};
 use game_core::server::ServerMessages;
 
-/// Système qui gère les événements de connexion/déconnexion des clients.
 pub fn on_server_event(
     players: Query<(Entity, &PlayerInfo, &Transform)>,
     enemies: Query<(Entity, &Transform), With<Enemy>>,
@@ -26,30 +25,28 @@ pub fn on_server_event(
             ServerEvent::ClientConnected { client_id } => {
                 ServerMessages::client_logon(client_id);
 
-                // Générer une position de spawn aléatoire qui évite le centre et les obstacles
-                // Spawn dans un des 4 quadrants de l'arène
                 let quadrant = fastrand::u8(0..4);
                 let position = match quadrant {
                     0 => Vec3::new(
                         fastrand::f32() * 200.0 + 200.0,
                         fastrand::f32() * 200.0 + 200.0,
                         0.0,
-                    ), // Haut-droite
+                    ),
                     1 => Vec3::new(
                         fastrand::f32() * 200.0 - 400.0,
                         fastrand::f32() * 200.0 + 200.0,
                         0.0,
-                    ), // Haut-gauche
+                    ),
                     2 => Vec3::new(
                         fastrand::f32() * 200.0 + 200.0,
                         fastrand::f32() * 200.0 - 400.0,
                         0.0,
-                    ), // Bas-droite
+                    ),
                     _ => Vec3::new(
                         fastrand::f32() * 200.0 - 400.0,
                         fastrand::f32() * 200.0 - 400.0,
                         0.0,
-                    ), // Bas-gauche
+                    ),
                 };
 
                 let entity = spawn_player(
