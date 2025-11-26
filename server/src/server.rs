@@ -1,10 +1,9 @@
 use crate::resource::server_lobby::ServerLobby;
 use crate::resource::ServerConfig;
-use crate::system::enemies::spawn_initial_enemies;
 use crate::system::input_handler::{
     apply_movement, interpolate_movement_intent, process_client_inputs,
 };
-use crate::system::level::setup_level;
+use crate::system::level::{setup_level, spawn_initial_enemies};
 use crate::system::position_sync::{
     broadcast_enemy_positions, broadcast_player_positions, EnemiesPositionTimer,
     PlayersPositionTimer,

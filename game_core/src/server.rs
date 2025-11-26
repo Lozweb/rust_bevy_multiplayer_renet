@@ -1,3 +1,4 @@
+use crate::enemy::EnemyType;
 use crate::network::{MessageSerialize, ServerChannel};
 use bevy::prelude::{info, Component, Entity, ResMut, Vec2, Vec3};
 use bevy_renet::renet::{ClientId, RenetServer};
@@ -22,6 +23,7 @@ pub enum ServerMessages {
     },
     EnemySpawned {
         server_entity: Entity,
+        enemy_type: EnemyType,
         position: Vec3,
     },
     EnemyPositions(Vec<(Entity, Vec3)>),
@@ -58,13 +60,5 @@ impl ServerMessages {
             ServerMessages::to_bytes(server_message),
         );
         info!("Send: {:?}", server_message);
-    }
-
-    pub fn client_logon(client_id: &ClientId) {
-        info!("Sending ClientLogon : Client {} connected", client_id);
-    }
-
-    pub fn client_logoff(client_id: &ClientId) {
-        info!("Sending ClientLogoff : Client {} disconnected", client_id);
     }
 }

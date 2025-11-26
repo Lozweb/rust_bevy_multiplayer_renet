@@ -4,11 +4,10 @@ use crate::resource::{ClientLobby, CurrentClientId, PlayerEntities};
 use bevy::log::error;
 use bevy::prelude::*;
 use bevy_renet::renet::RenetClient;
-use game_core::enemy::{spawn_enemy, Enemy};
+use game_core::enemy::{spawn_enemy, EnemyServerEntity};
 use game_core::network::{MessageDeserialize, ServerChannel};
 use game_core::server::ServerMessages;
 
-/// Système qui traite les événements reçus du serveur.
 pub fn on_client_event(
     current_client_id: Option<Res<CurrentClientId>>,
     mut client: ResMut<RenetClient>,
@@ -55,12 +54,6 @@ pub fn on_client_event(
                         );
                         info!("Player created: {client_id} at {position:?} with entity {entity}");
                     }
-                } else if player_exists_by_id || player_exists_by_entity {
-                    info!(
-                        "Player creation ignored for existing player: {client_id} (already exists)"
-                    );
-                } else {
-                    error!("Player creation failed: missing resources or level entity");
                 }
             }
             ServerMessages::PlayerRemove { client_id } => {
@@ -75,10 +68,19 @@ pub fn on_client_event(
             }
             ServerMessages::EnemySpawned {
                 server_entity,
+                enemy_type,
                 position,
             } => {
-                let e1 = spawn_enemy(&mut commands, position, &mut meshes, &mut materials);
-                commands.entity(e1).insert(Enemy { server_entity });
+                let e1 = spawn_enemy(
+                    &mut commands,
+                    position,
+                    enemy_type,
+                    &mut meshes,
+                    &mut materials,
+                );
+                commands
+                    .entity(e1)
+                    .insert(EnemyServerEntity { server_entity: e1 });
                 lobby.add_enemy(server_entity, e1);
                 info!("Enemy spawned: {server_entity:?} at {position:?}");
             }

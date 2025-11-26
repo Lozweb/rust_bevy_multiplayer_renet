@@ -1,5 +1,6 @@
 use avian2d::prelude::*;
 use bevy::prelude::*;
+use game_core::enemy::{spawn_enemy, EnemyServerEntity, EnemyType};
 
 #[derive(Component)]
 pub struct Wall;
@@ -8,8 +9,6 @@ pub struct Wall;
 pub struct ServerLevel;
 
 pub fn setup_level(mut commands: Commands) {
-    info!("Setting up server level with walls");
-
     commands
         .spawn((
             Name::new("ServerLevel"),
@@ -79,5 +78,40 @@ pub fn setup_level(mut commands: Commands) {
             ));
         });
 
-    info!("Server level created with walls and obstacles");
+    info!("Server level created");
+}
+
+pub fn spawn_initial_enemies(mut commands: Commands) {
+    let e1 = spawn_enemy(
+        &mut commands,
+        Vec3::new(200., 0., 0.),
+        EnemyType::Basic,
+        &mut None,
+        &mut None,
+    );
+    commands
+        .entity(e1)
+        .insert(EnemyServerEntity { server_entity: e1 });
+
+    let e2 = spawn_enemy(
+        &mut commands,
+        Vec3::new(300., 0., 0.),
+        EnemyType::Medium,
+        &mut None,
+        &mut None,
+    );
+    commands
+        .entity(e2)
+        .insert(EnemyServerEntity { server_entity: e2 });
+
+    let e3 = spawn_enemy(
+        &mut commands,
+        Vec3::new(350., 0., 0.),
+        EnemyType::Hard,
+        &mut None,
+        &mut None,
+    );
+    commands
+        .entity(e3)
+        .insert(EnemyServerEntity { server_entity: e3 });
 }
