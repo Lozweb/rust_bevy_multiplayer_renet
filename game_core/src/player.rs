@@ -10,41 +10,26 @@ use bevy::prelude::{
 use bevy_renet::renet::ClientId;
 use serde::{Deserialize, Serialize};
 
-/// Snapshot des entrées d'un joueur, transmis sur le réseau.
 #[derive(Debug, Default, Clone, Copy, Serialize, Deserialize, Component, Resource)]
 pub struct PlayerInput {
-    /// Déplacement vers le haut
     pub up: bool,
-    /// Déplacement vers le bas
     pub down: bool,
-    /// Déplacement vers la gauche
     pub left: bool,
-    /// Déplacement vers la droite
     pub right: bool,
-    /// Action de saut
     pub jump: bool,
-    /// Direction de visée en radians
     pub aim_direction: f32,
-    /// Action de tir
     pub shoot: bool,
 }
 
-/// Direction de visée courante en radians.
 #[derive(Component, Resource, Debug, Clone, Copy, PartialEq, Default, Reflect)]
 #[reflect(Component, Resource)]
 pub struct AimDirection(pub f32);
 
-/// Contrôleur de mouvement pour un personnage.
-///
-/// Utilisé côté client et serveur pour gérer le mouvement basé sur les intentions.
 #[derive(Component, Debug, Clone, Reflect)]
 #[reflect(Component)]
 pub struct MovementController {
-    /// Direction de mouvement normalisée (0.0 à 1.0)
     pub intent: Vec2,
-    /// Direction cible (input du joueur, pour interpolation serveur)
     pub target_intent: Vec2,
-    /// Vitesse maximale en unités/seconde
     pub max_speed: f32,
 }
 
@@ -58,40 +43,18 @@ impl Default for MovementController {
     }
 }
 
-/// Position de la souris dans l'espace monde.
-///
-/// Contient `None` si la position n'est pas disponible.
 #[derive(Resource, Debug, Default, Deref)]
 pub struct MouseWorldCoords(pub Option<Vec2>);
 
-/// Informations d'un joueur connecté.
 #[derive(Debug, Component)]
 pub struct PlayerInfo {
-    /// Identifiant unique du client
     pub id: ClientId,
-    /// Nom affiché du joueur
     pub name: String,
 }
 
-/// Marque l'entité contrôlée par le joueur local.
-///
-/// Utilisé pour identifier le joueur local (caméra, entrées, possession).
 #[derive(Component)]
 pub struct ControlledPlayer;
 
-/// Crée une entité joueur avec physique et rendu optionnel.
-///
-/// # Arguments
-///
-/// * `client_id` - Identifiant du client propriétaire
-/// * `position` - Position initiale du joueur
-/// * `commands` - Commands Bevy pour spawner l'entité
-/// * `meshes` - Assets de mesh (optionnel, pour le rendu)
-/// * `materials` - Assets de matériaux (optionnel, pour le rendu)
-///
-/// # Returns
-///
-/// L'`Entity` créée
 pub fn spawn_player(
     client_id: &ClientId,
     position: Vec3,
@@ -111,11 +74,11 @@ pub fn spawn_player(
         RigidBody::Dynamic,
         Collider::rectangle(32.0, 32.0),
         Mass(50.0),
-        LinearDamping(1.5), // Damping réduit pour plus de réactivité
+        LinearDamping(1.5),
         LinearVelocity::ZERO,
         LockedAxes::ROTATION_LOCKED,
-        Friction::new(0.1),    // Friction faible pour glissement fluide
-        Restitution::new(0.0), // Pas de rebond sur les collisions
+        Friction::new(0.1),
+        Restitution::new(0.0),
     ));
 
     if let (Some(meshes), Some(materials)) = (meshes.as_mut(), materials.as_mut()) {

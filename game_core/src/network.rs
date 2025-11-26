@@ -131,9 +131,7 @@ impl ClientChannel {
     }
 }
 
-/// Trait pour sérialiser des messages réseau en octets.
 pub trait MessageSerialize {
-    /// Sérialise le message en `Vec<u8>`.
     fn to_bytes(&self) -> Vec<u8>;
 }
 
@@ -146,17 +144,11 @@ where
     }
 }
 
-/// Trait pour désérialiser des messages réseau depuis des octets.
 pub trait MessageDeserialize: Sized {
-    /// Désérialise une instance depuis `&[u8]`.
-    ///
-    /// Retourne une valeur de repli en cas d'erreur de désérialisation.
     fn from_bytes(bytes: &[u8]) -> Self;
 }
 
-/// Trait définissant une valeur de repli en cas d'erreur de désérialisation.
 pub trait DeserializeErrorFallback {
-    /// Retourne une instance de repli lors d'une erreur de désérialisation.
     fn deserialize_error(err: DecodeError) -> Self;
 }
 
@@ -174,9 +166,6 @@ where
     }
 }
 
-/// Sérialise un message en vecteur d'octets via bincode.
-///
-/// Retourne un vecteur vide en cas d'erreur de sérialisation (avec log).
 pub fn serialize_message<T: MessageSerialize>(message: &T) -> Vec<u8>
 where
     T: Serialize,
