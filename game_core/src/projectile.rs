@@ -8,7 +8,15 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, Reflect, Component)]
 #[reflect(Component)]
-pub struct Projectile;
+pub struct Projectile {
+    pub damage: u32,
+}
+
+impl Projectile {
+    pub fn new(damage: u32) -> Self {
+        Self { damage }
+    }
+}
 
 #[derive(Debug, Clone, Reflect, Component)]
 #[reflect(Component)]

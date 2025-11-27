@@ -62,7 +62,7 @@ pub fn handle_shoot(
     materials: &mut Option<ResMut<Assets<ColorMaterial>>>,
 ) {
     let server_entity = spawn_projectil(
-        &Projectile,
+        &Projectile { damage: 10 },
         position,
         aim_direction,
         commands,
@@ -73,6 +73,7 @@ pub fn handle_shoot(
     ServerMessages::broadcast(
         &ServerMessages::ProjectileSpawned {
             server_entity,
+            damage: 10,
             position,
             direction: aim_direction.0,
         },

@@ -23,9 +23,9 @@ pub struct Enemy {
 impl Enemy {
     pub fn new(enemy_type: EnemyType) -> Self {
         let health = match enemy_type {
-            EnemyType::Basic => 100,
-            EnemyType::Medium => 200,
-            EnemyType::Hard => 300,
+            EnemyType::Basic => 20,
+            EnemyType::Medium => 30,
+            EnemyType::Hard => 50,
         };
         Self { health, enemy_type }
     }
@@ -42,6 +42,18 @@ impl Enemy {
             Restitution::new(RESTITUTION_COEFFICIENT),
             NetworkedTransform::default(),
         )
+    }
+
+    pub fn apply_damage(&mut self, damage: u32) {
+        if damage >= self.health {
+            self.health = 0;
+        } else {
+            self.health -= damage;
+        }
+    }
+
+    pub fn is_dead(&self) -> bool {
+        self.health == 0
     }
 }
 

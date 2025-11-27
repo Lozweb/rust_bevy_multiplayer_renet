@@ -92,11 +92,12 @@ pub fn on_client_event(
 
             ServerMessages::ProjectileSpawned {
                 server_entity,
+                damage,
                 position,
                 direction,
             } => {
                 let projectil_entity = spawn_projectil(
-                    &Projectile,
+                    &Projectile { damage },
                     position,
                     AimDirection(direction),
                     &mut commands,

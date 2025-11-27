@@ -29,6 +29,7 @@ pub enum ServerMessages {
     EnemyPositions(Vec<(Entity, Vec3)>),
     ProjectileSpawned {
         server_entity: Entity,
+        damage: u32,
         position: Vec3,
         direction: f32,
     },
