@@ -4,11 +4,12 @@ use bevy::prelude::Component;
 pub mod asset_tracking;
 pub mod client;
 pub mod enemy;
+pub mod level;
 pub mod network;
 pub mod player;
+pub mod projectile;
 pub mod server;
 pub mod transport;
-pub mod weapon;
 
 #[derive(Component, Debug)]
 pub struct NetworkedTransform {

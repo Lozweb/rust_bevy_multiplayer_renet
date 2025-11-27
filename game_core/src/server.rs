@@ -27,13 +27,19 @@ pub enum ServerMessages {
         position: Vec3,
     },
     EnemyPositions(Vec<(Entity, Vec3)>),
-    ErrorMessage {
-        reason: String,
-    },
     ProjectileSpawned {
         server_entity: Entity,
         position: Vec3,
         direction: f32,
+    },
+    ProjectileCollision {
+        server_entity: Entity,
+    },
+    ProjectileCleanup {
+        server_entity: Entity,
+    },
+    ErrorMessage {
+        reason: String,
     },
 }
 

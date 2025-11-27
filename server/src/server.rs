@@ -1,9 +1,9 @@
 use crate::resource::server_lobby::ServerLobby;
 use crate::resource::ServerConfig;
+use crate::system::collision::collision;
 use crate::system::input_handler::{
     apply_movement, interpolate_movement_intent, process_client_inputs,
 };
-use crate::system::level::{setup_level, spawn_initial_enemies};
 use crate::system::position_sync::{
     broadcast_enemy_positions, broadcast_player_positions, EnemiesPositionTimer,
     PlayersPositionTimer,
@@ -14,6 +14,7 @@ use bevy::app::{App, FixedUpdate, Startup, Update};
 use bevy::prelude::{IntoScheduleConfigs, Res};
 use bevy_renet::netcode::NetcodeServerPlugin;
 use bevy_renet::renet::RenetServer;
+use game_core::level::{setup_level, spawn_initial_enemies};
 use game_core::network::connection_config;
 use game_core::transport::setup_server_transport;
 use tracing::info;
@@ -42,6 +43,7 @@ pub(crate) fn plugin(app: &mut App) {
     app.add_systems(Update, apply_movement.after(interpolate_movement_intent));
     app.add_systems(Update, broadcast_player_positions.after(apply_movement));
     app.add_systems(FixedUpdate, broadcast_enemy_positions);
+    app.add_systems(FixedUpdate, collision);
 }
 
 fn setup_server(config: Res<ServerConfig>) {

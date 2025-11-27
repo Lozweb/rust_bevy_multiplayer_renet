@@ -50,7 +50,6 @@ struct LocalPlayerPhysicsBundle {
     linear_damping: LinearDamping,
     linear_velocity: LinearVelocity,
     locked_axes: LockedAxes,
-    collision_events: CollisionEventsEnabled,
     debug_render: DebugRender,
 }
 
@@ -63,7 +62,6 @@ impl Default for LocalPlayerPhysicsBundle {
             linear_damping: LinearDamping(1.5),
             linear_velocity: LinearVelocity::ZERO,
             locked_axes: LockedAxes::ROTATION_LOCKED,
-            collision_events: CollisionEventsEnabled,
             debug_render: DebugRender::default().with_collider_color(Color::WHITE),
         }
     }

@@ -4,8 +4,8 @@ use bevy_renet::renet::RenetServer;
 use game_core::client::ClientMessage;
 use game_core::network::{ClientChannel, MessageDeserialize};
 use game_core::player::{AimDirection, MovementController};
+use game_core::projectile::{spawn_projectil, Projectile};
 use game_core::server::ServerMessages;
-use game_core::weapon::{spawn_weapon, Weapon};
 
 pub fn process_client_inputs(
     mut commands: Commands,
@@ -61,8 +61,8 @@ pub fn handle_shoot(
     meshes: &mut Option<ResMut<Assets<Mesh>>>,
     materials: &mut Option<ResMut<Assets<ColorMaterial>>>,
 ) {
-    let server_entity = spawn_weapon(
-        &Weapon,
+    let server_entity = spawn_projectil(
+        &Projectile,
         position,
         aim_direction,
         commands,

@@ -1,8 +1,8 @@
 use crate::audio::music;
 use crate::screens::Screen;
-use avian2d::prelude::*;
 use bevy::prelude::*;
 use game_core::asset_tracking::LoadResource;
+use game_core::level::{wall_bundle, LEVEL_ARENA_HEIGHT, LEVEL_WALL_THICKNESS};
 
 #[derive(Component)]
 pub struct Level;
@@ -50,71 +50,81 @@ pub fn spawn_level(
             let wall_material = materials.add(ColorMaterial::from(Color::srgb(0.3, 0.3, 0.4)));
             let obstacle_material = materials.add(ColorMaterial::from(Color::srgb(0.5, 0.3, 0.3)));
 
-            let arena_width = 1200.0;
-            let arena_height = 800.0;
-            let wall_thickness = 20.0;
+            parent
+                .spawn(wall_bundle(
+                    "WallTop".to_string(),
+                    Vec3::new(0.0, LEVEL_ARENA_HEIGHT / 2.0, 0.0),
+                    Vec2::new(LEVEL_ARENA_HEIGHT, LEVEL_WALL_THICKNESS),
+                ))
+                .insert((
+                    Mesh2d(meshes.add(Rectangle::new(LEVEL_ARENA_HEIGHT, LEVEL_WALL_THICKNESS))),
+                    MeshMaterial2d(wall_material.clone()),
+                ));
 
-            parent.spawn((
-                Name::new("WallTop"),
-                Mesh2d(meshes.add(Rectangle::new(arena_width, wall_thickness))),
-                MeshMaterial2d(wall_material.clone()),
-                Transform::from_xyz(0.0, arena_height / 2.0, -0.5),
-                RigidBody::Static,
-                Collider::rectangle(arena_width, wall_thickness),
-            ));
+            parent
+                .spawn(wall_bundle(
+                    "WallBottom".to_string(),
+                    Vec3::new(0.0, -LEVEL_ARENA_HEIGHT / 2.0, 0.0),
+                    Vec2::new(LEVEL_ARENA_HEIGHT, LEVEL_WALL_THICKNESS),
+                ))
+                .insert((
+                    Mesh2d(meshes.add(Rectangle::new(LEVEL_ARENA_HEIGHT, LEVEL_WALL_THICKNESS))),
+                    MeshMaterial2d(wall_material.clone()),
+                ));
 
-            parent.spawn((
-                Name::new("WallBottom"),
-                Mesh2d(meshes.add(Rectangle::new(arena_width, wall_thickness))),
-                MeshMaterial2d(wall_material.clone()),
-                Transform::from_xyz(0.0, -arena_height / 2.0, -0.5),
-                RigidBody::Static,
-                Collider::rectangle(arena_width, wall_thickness),
-            ));
+            parent
+                .spawn(wall_bundle(
+                    "WallLeft".to_string(),
+                    Vec3::new(-LEVEL_ARENA_HEIGHT / 2.0, 0.0, 0.0),
+                    Vec2::new(LEVEL_WALL_THICKNESS, LEVEL_ARENA_HEIGHT),
+                ))
+                .insert((
+                    Mesh2d(meshes.add(Rectangle::new(LEVEL_WALL_THICKNESS, LEVEL_ARENA_HEIGHT))),
+                    MeshMaterial2d(wall_material.clone()),
+                ));
 
-            parent.spawn((
-                Name::new("WallLeft"),
-                Mesh2d(meshes.add(Rectangle::new(wall_thickness, arena_height))),
-                MeshMaterial2d(wall_material.clone()),
-                Transform::from_xyz(-arena_width / 2.0, 0.0, -0.5),
-                RigidBody::Static,
-                Collider::rectangle(wall_thickness, arena_height),
-            ));
+            parent
+                .spawn(wall_bundle(
+                    "WallRight".to_string(),
+                    Vec3::new(LEVEL_ARENA_HEIGHT / 2.0, 0.0, 0.0),
+                    Vec2::new(LEVEL_WALL_THICKNESS, LEVEL_ARENA_HEIGHT),
+                ))
+                .insert((
+                    Mesh2d(meshes.add(Rectangle::new(LEVEL_WALL_THICKNESS, LEVEL_ARENA_HEIGHT))),
+                    MeshMaterial2d(wall_material.clone()),
+                ));
 
-            parent.spawn((
-                Name::new("WallRight"),
-                Mesh2d(meshes.add(Rectangle::new(wall_thickness, arena_height))),
-                MeshMaterial2d(wall_material.clone()),
-                Transform::from_xyz(arena_width / 2.0, 0.0, -0.5),
-                RigidBody::Static,
-                Collider::rectangle(wall_thickness, arena_height),
-            ));
+            parent
+                .spawn(wall_bundle(
+                    "CentralObstacle".to_string(),
+                    Vec3::ZERO,
+                    Vec2::new(100.0, 100.0),
+                ))
+                .insert((
+                    Mesh2d(meshes.add(Rectangle::new(100.0, 100.0))),
+                    MeshMaterial2d(obstacle_material.clone()),
+                ));
 
-            parent.spawn((
-                Name::new("CentralObstacle"),
-                Mesh2d(meshes.add(Rectangle::new(100.0, 100.0))),
-                MeshMaterial2d(obstacle_material.clone()),
-                Transform::from_xyz(0.0, 0.0, -0.5),
-                RigidBody::Static,
-                Collider::rectangle(100.0, 100.0),
-            ));
+            parent
+                .spawn(wall_bundle(
+                    "ObstacleLeft".to_string(),
+                    Vec3::new(-300.0, 100.0, 0.0),
+                    Vec2::new(80.0, 80.0),
+                ))
+                .insert((
+                    Mesh2d(meshes.add(Rectangle::new(80.0, 80.0))),
+                    MeshMaterial2d(obstacle_material.clone()),
+                ));
 
-            parent.spawn((
-                Name::new("ObstacleLeft"),
-                Mesh2d(meshes.add(Rectangle::new(80.0, 80.0))),
-                MeshMaterial2d(obstacle_material.clone()),
-                Transform::from_xyz(-300.0, 100.0, -0.5),
-                RigidBody::Static,
-                Collider::rectangle(80.0, 80.0),
-            ));
-
-            parent.spawn((
-                Name::new("ObstacleRight"),
-                Mesh2d(meshes.add(Rectangle::new(80.0, 80.0))),
-                MeshMaterial2d(obstacle_material),
-                Transform::from_xyz(300.0, -100.0, -0.5),
-                RigidBody::Static,
-                Collider::rectangle(80.0, 80.0),
-            ));
+            parent
+                .spawn(wall_bundle(
+                    "ObstacleRight".to_string(),
+                    Vec3::new(300.0, 100.0, 0.0),
+                    Vec2::new(80.0, 80.0),
+                ))
+                .insert((
+                    Mesh2d(meshes.add(Rectangle::new(80.0, 80.0))),
+                    MeshMaterial2d(obstacle_material),
+                ));
         });
 }

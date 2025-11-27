@@ -7,8 +7,8 @@ use bevy_renet::renet::RenetClient;
 use game_core::enemy::{spawn_enemy, EnemyServerEntity};
 use game_core::network::{MessageDeserialize, ServerChannel};
 use game_core::player::AimDirection;
+use game_core::projectile::{spawn_projectil, Projectile};
 use game_core::server::ServerMessages;
-use game_core::weapon::{spawn_weapon, Weapon};
 
 pub fn on_client_event(
     current_client_id: Option<Res<CurrentClientId>>,
@@ -95,14 +95,21 @@ pub fn on_client_event(
                 position,
                 direction,
             } => {
-                let _projectil_entitye = spawn_weapon(
-                    &Weapon,
+                let projectil_entity = spawn_projectil(
+                    &Projectile,
                     position,
                     AimDirection(direction),
                     &mut commands,
                     &mut meshes,
                     &mut materials,
                 );
+                lobby.add_weapon(server_entity, projectil_entity);
+            }
+
+            ServerMessages::ProjectileCollision { server_entity } => {
+                if let Some(projectil_entity) = lobby.remove_weapon(&server_entity) {
+                    info!("Projectile removed: {projectil_entity:?}");
+                }
             }
             _ => {}
         }

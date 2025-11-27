@@ -11,6 +11,7 @@ pub struct PlayerEntities {
 pub struct ClientLobby {
     pub players: HashMap<ClientId, PlayerEntities>,
     pub ennemies: HashMap<Entity, Entity>,
+    pub weapons: HashMap<Entity, Entity>,
 }
 
 impl ClientLobby {
@@ -18,24 +19,8 @@ impl ClientLobby {
         self.players.insert(*client_id, entities);
     }
 
-    pub fn add_enemy(&mut self, server_entity: Entity, client_entity: Entity) {
-        self.ennemies.insert(server_entity, client_entity);
-    }
-
     pub fn remove_player(&mut self, client_id: &ClientId) -> Option<PlayerEntities> {
         self.players.remove(client_id)
-    }
-
-    pub fn remove_enemy(&mut self, server_entity: &Entity) -> Option<Entity> {
-        self.ennemies.remove(server_entity)
-    }
-
-    pub fn get_player_entities(&self, client_id: &ClientId) -> Option<&PlayerEntities> {
-        self.players.get(client_id)
-    }
-
-    pub fn get_enemy_entity(&self, server_entity: &Entity) -> Option<&Entity> {
-        self.ennemies.get(server_entity)
     }
 
     pub fn get_player_by_server_entity(
@@ -49,6 +34,32 @@ impl ClientLobby {
                 None
             }
         })
+    }
+
+    pub fn get_player_entities(&self, client_id: &ClientId) -> Option<&PlayerEntities> {
+        self.players.get(client_id)
+    }
+
+    pub fn add_enemy(&mut self, server_entity: Entity, client_entity: Entity) {
+        self.ennemies.insert(server_entity, client_entity);
+    }
+    pub fn remove_enemy(&mut self, server_entity: &Entity) -> Option<Entity> {
+        self.ennemies.remove(server_entity)
+    }
+
+    pub fn get_enemy_entity(&self, server_entity: &Entity) -> Option<&Entity> {
+        self.ennemies.get(server_entity)
+    }
+
+    pub fn add_weapon(&mut self, server_entity: Entity, client_entity: Entity) {
+        self.weapons.insert(server_entity, client_entity);
+    }
+
+    pub fn remove_weapon(&mut self, server_entity: &Entity) -> Option<Entity> {
+        self.weapons.remove(server_entity)
+    }
+    pub fn get_weapon_entity(&self, server_entity: &Entity) -> Option<&Entity> {
+        self.weapons.get(server_entity)
     }
 }
 
