@@ -4,7 +4,7 @@ use bevy_renet::renet::RenetServer;
 use game_core::enemy::Enemy;
 use game_core::network::{MessageSerialize, ServerChannel};
 use game_core::player::{AimDirection, PlayerInfo};
-use game_core::server::ServerMessages;
+use game_core::server::{NetworkedEnemyData, ServerMessages};
 
 #[derive(Resource)]
 pub struct PlayersPositionTimer {
@@ -60,7 +60,7 @@ pub fn broadcast_enemy_positions(
     time: Res<Time>,
     mut timer: ResMut<EnemiesPositionTimer>,
     mut server: ResMut<RenetServer>,
-    enemies: Query<(Entity, &Transform), With<Enemy>>,
+    enemies: Query<(Entity, &Transform, &Enemy), With<Enemy>>,
 ) {
     timer.timer.tick(time.delta());
 
@@ -68,13 +68,17 @@ pub fn broadcast_enemy_positions(
         return;
     }
 
-    let enemy_positions: Vec<(Entity, Vec3)> = enemies
+    let enemy_data: Vec<NetworkedEnemyData> = enemies
         .iter()
-        .map(|(entity, transform)| (entity, transform.translation))
+        .map(|(entity, transform, enemy)| NetworkedEnemyData {
+            server_entity: entity,
+            position: transform.translation,
+            health: enemy.health,
+        })
         .collect();
 
-    if !enemy_positions.is_empty() {
-        let update = ServerMessages::EnemyPositions(enemy_positions);
+    if !enemy_data.is_empty() {
+        let update = ServerMessages::EnemyPositions(enemy_data);
         server.broadcast_message(ServerChannel::Snapshots, ServerMessages::to_bytes(&update));
     }
 }

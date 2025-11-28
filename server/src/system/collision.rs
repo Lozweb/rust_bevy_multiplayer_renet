@@ -29,28 +29,30 @@ pub fn collision(
                 continue;
             };
 
-        if despawned_projectiles.contains(&projectile_entity) {
-            continue;
-        }
-
         if let Ok(mut enemy) = enemy_query.get_mut(target_entity) {
             enemy.apply_damage(projectile.damage);
-            info!(
-                "Projectile {:?} hit Enemy {:?}, applied {} damage. Enemy health is now {}.",
-                projectile_entity, target_entity, projectile.damage, enemy.health
-            );
 
             if enemy.is_dead() {
                 info!("Enemy {:?} is dead!", target_entity);
+
+                ServerMessages::broadcast(
+                    &ServerMessages::EnemyDeath {
+                        server_entity: target_entity,
+                    },
+                    &mut server,
+                );
+                commands.entity(target_entity).despawn();
             }
         }
 
-        mark_projectile_despawn(
-            &mut commands,
-            &mut server,
-            projectile_entity,
-            &mut despawned_projectiles,
-        );
+        if !despawned_projectiles.contains(&projectile_entity) {
+            mark_projectile_despawn(
+                &mut commands,
+                &mut server,
+                projectile_entity,
+                &mut despawned_projectiles,
+            );
+        }
     }
 
     let delta = time.delta();

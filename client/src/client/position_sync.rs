@@ -22,7 +22,7 @@ pub fn receive_position_updates(
     lobby: Res<ClientLobby>,
     time: Res<Time>,
     mut players: Query<&mut NetworkedTransform, With<Player>>,
-    mut enemies: Query<&mut NetworkedTransform, (With<Enemy>, Without<Player>)>,
+    mut enemies: Query<(&mut NetworkedTransform, &mut Enemy), Without<Player>>,
 ) {
     while let Some(message) = client.receive_message(ServerChannel::Snapshots) {
         match ServerMessages::from_bytes(&message) {
@@ -42,13 +42,18 @@ pub fn receive_position_updates(
                     networked_transform.last_update_time = time.elapsed_secs();
                 }
             }
-            ServerMessages::EnemyPositions(enemies_position) => {
-                for (server_entity, position) in enemies_position {
-                    if let Some(client_entity) = lobby.get_enemy_entity(&server_entity)
-                        && let Ok(mut networked_transform) = enemies.get_mut(*client_entity)
+            ServerMessages::EnemyPositions(enemies_data) => {
+                for data in enemies_data {
+                    if let Some(client_entity) = lobby.get_enemy_entity(&data.server_entity)
+                        && let Ok((mut network_transform, mut enemy_component)) =
+                            enemies.get_mut(*client_entity)
                     {
-                        networked_transform.target_position = position;
-                        networked_transform.last_update_time = time.elapsed_secs();
+                        network_transform.target_position = data.position;
+                        network_transform.last_update_time = time.elapsed_secs();
+
+                        if enemy_component.health != data.health {
+                            enemy_component.health = data.health;
+                        }
                     }
                 }
             }

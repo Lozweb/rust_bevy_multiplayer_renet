@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 
 const RESTITUTION_COEFFICIENT: f32 = 0.0;
 const FRICTION_COEFFICIENT: f32 = 0.1;
-const LINEAR_DAMPING: f32 = 2.0;
+const LINEAR_DAMPING: f32 = 5.0;
 
 #[derive(Component, Debug, Clone, Copy, Serialize, Deserialize, Reflect)]
 #[reflect(Component)]

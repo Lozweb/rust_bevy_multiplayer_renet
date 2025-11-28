@@ -86,8 +86,12 @@ pub fn on_client_event(
                 lobby.add_enemy(server_entity, e1);
                 info!("Enemy spawned: {server_entity:?} at {position:?}");
             }
-            ServerMessages::ErrorMessage { reason } => {
-                error!("{}", reason);
+
+            ServerMessages::EnemyDeath { server_entity } => {
+                if let Some(client_entity) = lobby.remove_enemy(&server_entity) {
+                    info!("Enemy died: {client_entity:?}");
+                    commands.entity(client_entity).despawn();
+                }
             }
 
             ServerMessages::ProjectileSpawned {
@@ -111,6 +115,10 @@ pub fn on_client_event(
                 if let Some(projectil_entity) = lobby.remove_weapon(&server_entity) {
                     info!("Projectile removed: {projectil_entity:?}");
                 }
+            }
+
+            ServerMessages::ErrorMessage { reason } => {
+                error!("{}", reason);
             }
             _ => {}
         }

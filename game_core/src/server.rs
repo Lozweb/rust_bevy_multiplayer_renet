@@ -5,6 +5,13 @@ use bevy_renet::renet::{ClientId, RenetServer};
 use bincode::error::DecodeError;
 use serde::{Deserialize, Serialize};
 
+#[derive(Debug, Serialize, Deserialize, Clone, Copy)]
+pub struct NetworkedEnemyData {
+    pub server_entity: Entity,
+    pub position: Vec3,
+    pub health: u32,
+}
+
 #[derive(Debug, Serialize, Deserialize, Component)]
 pub enum ServerMessages {
     PlayerCreate {
@@ -26,12 +33,15 @@ pub enum ServerMessages {
         enemy_type: EnemyType,
         position: Vec3,
     },
-    EnemyPositions(Vec<(Entity, Vec3)>),
+    EnemyPositions(Vec<NetworkedEnemyData>),
     ProjectileSpawned {
         server_entity: Entity,
         damage: u32,
         position: Vec3,
         direction: f32,
+    },
+    EnemyDeath {
+        server_entity: Entity,
     },
     ProjectileCollision {
         server_entity: Entity,
