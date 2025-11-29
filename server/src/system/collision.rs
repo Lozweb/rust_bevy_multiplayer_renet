@@ -33,8 +33,6 @@ pub fn collision(
             enemy.apply_damage(projectile.damage);
 
             if enemy.is_dead() {
-                info!("Enemy {:?} is dead!", target_entity);
-
                 ServerMessages::broadcast(
                     &ServerMessages::EnemyDeath {
                         server_entity: target_entity,

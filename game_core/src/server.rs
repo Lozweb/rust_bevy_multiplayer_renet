@@ -1,6 +1,6 @@
 use crate::enemy::EnemyType;
 use crate::network::{MessageSerialize, ServerChannel};
-use bevy::prelude::{info, Component, Entity, ResMut, Vec2, Vec3};
+use bevy::prelude::{Component, Entity, ResMut, Vec2, Vec3};
 use bevy_renet::renet::{ClientId, RenetServer};
 use bincode::error::DecodeError;
 use serde::{Deserialize, Serialize};
@@ -68,7 +68,6 @@ impl ServerMessages {
             ServerChannel::ReliableState,
             ServerMessages::to_bytes(server_message),
         );
-        info!("Broadcasted: {:?}", server_message);
     }
 
     pub fn send(
@@ -81,6 +80,5 @@ impl ServerMessages {
             ServerChannel::ReliableState,
             ServerMessages::to_bytes(server_message),
         );
-        info!("Send: {:?}", server_message);
     }
 }

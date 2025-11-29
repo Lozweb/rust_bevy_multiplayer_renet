@@ -7,19 +7,30 @@ use game_core::player::{AimDirection, PlayerInfo};
 use game_core::server::{NetworkedEnemyData, ServerMessages};
 
 #[derive(Resource)]
-pub struct PositionSyncTimer {
+pub struct PlayersPositionTimer {
     pub timer: Timer,
 }
 
-impl Default for PositionSyncTimer {
+impl Default for PlayersPositionTimer {
     fn default() -> Self {
         Self {
             timer: Timer::from_seconds(0.033, TimerMode::Repeating),
         }
     }
 }
-pub type PlayersPositionTimer = PositionSyncTimer;
-pub type EnemiesPositionTimer = PositionSyncTimer;
+
+#[derive(Resource)]
+pub struct EnemiesPositionTimer {
+    pub timer: Timer,
+}
+
+impl Default for EnemiesPositionTimer {
+    fn default() -> Self {
+        Self {
+            timer: Timer::from_seconds(0.033, TimerMode::Repeating),
+        }
+    }
+}
 
 pub fn sync_players_position(
     time: Res<Time>,

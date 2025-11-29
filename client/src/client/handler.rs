@@ -68,12 +68,10 @@ pub fn enemy_spawned(
         .entity(e1)
         .insert(EnemyServerEntity { server_entity: e1 });
     lobby.add_enemy(server_entity, e1);
-    info!("Enemy spawned: {server_entity:?} at {position:?}");
 }
 
 pub fn enemy_death(server_entity: Entity, lobby: &mut ClientLobby, commands: &mut Commands) {
     if let Some(client_entity) = lobby.remove_enemy(&server_entity) {
-        info!("Enemy died: {client_entity:?}");
         commands.entity(client_entity).despawn();
     }
 }

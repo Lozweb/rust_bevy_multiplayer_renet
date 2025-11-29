@@ -7,14 +7,8 @@ use serde::{Deserialize, Serialize};
 use std::net::{SocketAddr, UdpSocket};
 use std::time::{Duration, SystemTime};
 
-/// Identifiant de protocole pour la compatibilité client/serveur.
-///
-/// Incrémentez cette valeur à chaque changement incompatible du protocole réseau.
 pub const PROTOCOL_ID: u64 = 1;
 
-/// Retourne la configuration de connexion renet.
-///
-/// Configure la bande passante maximale (1 MiB/tick) et les canaux client/serveur.
 pub fn connection_config() -> ConnectionConfig {
     ConnectionConfig {
         available_bytes_per_tick: 1024 * 1024,
@@ -23,9 +17,6 @@ pub fn connection_config() -> ConnectionConfig {
     }
 }
 
-/// Retourne la durée écoulée depuis `UNIX_EPOCH`.
-///
-/// En cas d'erreur (horloge système avant epoch), journalise et retourne `Duration::ZERO`.
 pub fn get_current_time() -> Duration {
     SystemTime::now()
         .duration_since(SystemTime::UNIX_EPOCH)
@@ -35,24 +26,15 @@ pub fn get_current_time() -> Duration {
         })
 }
 
-/// Crée un `UdpSocket` lié à l'adresse fournie.
-///
-/// # Panics
-///
-/// Panique si `UdpSocket::bind` échoue.
 pub fn get_socket(socket_address: SocketAddr) -> UdpSocket {
     UdpSocket::bind(socket_address)
         .unwrap_or_else(|e| panic!("Erreur lors de la création du socket UDP: {e}"))
 }
 
-/// Canaux réseau utilisés par le serveur pour envoyer des messages aux clients.
 #[derive(Debug, Serialize, Deserialize, Component)]
 pub enum ServerChannel {
-    /// Snapshots de position et d'état (unreliable, haute fréquence)
     Snapshots,
-    /// Événements critiques de gameplay (reliable, faible latence)
     CriticalEvents,
-    /// Messages de contrôle fiables (spawn/despawn, erreurs)
     ReliableState,
 }
 
@@ -67,7 +49,6 @@ impl From<ServerChannel> for u8 {
 }
 
 impl ServerChannel {
-    /// Configuration des canaux serveur.
     pub fn channel_config() -> Vec<ChannelConfig> {
         vec![
             ChannelConfig {
@@ -93,11 +74,8 @@ impl ServerChannel {
     }
 }
 
-/// Canaux réseau utilisés par le client pour envoyer des messages au serveur.
 pub enum ClientChannel {
-    /// Entrées du joueur (haute fréquence)
     Input,
-    /// Commandes fiables ponctuelles (chat, interactions critiques)
     ReliableCommand,
 }
 
