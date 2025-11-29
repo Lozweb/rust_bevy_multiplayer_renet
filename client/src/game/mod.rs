@@ -15,5 +15,5 @@ pub(super) fn plugin(app: &mut App) {
         player::plugin,
         camera::plugin,
     ));
-    app.add_systems(FixedUpdate, collision::collision);
+    app.add_systems(FixedUpdate, collision::projectiles_client_cleanup);
 }

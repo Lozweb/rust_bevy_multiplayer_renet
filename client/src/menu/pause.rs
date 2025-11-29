@@ -1,4 +1,4 @@
-use crate::client::event::DisconnectUser;
+use crate::client::DisconnectUser;
 use crate::menu::Menu;
 use crate::screens::Screen;
 use crate::theme::widget;

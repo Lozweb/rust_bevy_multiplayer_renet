@@ -53,34 +53,6 @@ pub fn process_client_inputs(
     }
 }
 
-pub fn handle_shoot(
-    position: Vec3,
-    aim_direction: AimDirection,
-    server: &mut ResMut<RenetServer>,
-    commands: &mut Commands,
-    meshes: &mut Option<ResMut<Assets<Mesh>>>,
-    materials: &mut Option<ResMut<Assets<ColorMaterial>>>,
-) {
-    let server_entity = spawn_projectil(
-        &Projectile { damage: 10 },
-        position,
-        aim_direction,
-        commands,
-        meshes,
-        materials,
-    );
-
-    ServerMessages::broadcast(
-        &ServerMessages::ProjectileSpawned {
-            server_entity,
-            damage: 10,
-            position,
-            direction: aim_direction.0,
-        },
-        server,
-    );
-}
-
 pub fn interpolate_movement_intent(
     time: Res<Time>,
     mut controllers: Query<&mut MovementController>,
@@ -115,7 +87,6 @@ pub fn apply_movement(
 
     for (controller, mut velocity) in &mut movement_query {
         let desired_velocity = controller.intent * controller.max_speed;
-
         let t = (ACCELERATION * delta).min(1.0);
         let new_velocity = velocity.0.lerp(desired_velocity, t);
 
@@ -125,4 +96,32 @@ pub fn apply_movement(
             new_velocity
         };
     }
+}
+
+fn handle_shoot(
+    position: Vec3,
+    aim_direction: AimDirection,
+    server: &mut ResMut<RenetServer>,
+    commands: &mut Commands,
+    meshes: &mut Option<ResMut<Assets<Mesh>>>,
+    materials: &mut Option<ResMut<Assets<ColorMaterial>>>,
+) {
+    let server_entity = spawn_projectil(
+        &Projectile { damage: 10 },
+        position,
+        aim_direction,
+        commands,
+        meshes,
+        materials,
+    );
+
+    ServerMessages::broadcast(
+        &ServerMessages::ProjectileSpawned {
+            server_entity,
+            damage: 10,
+            position,
+            direction: aim_direction.0,
+        },
+        server,
+    );
 }

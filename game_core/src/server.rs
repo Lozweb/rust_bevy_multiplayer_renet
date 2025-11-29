@@ -15,9 +15,9 @@ pub struct NetworkedEnemyData {
 #[derive(Debug, Serialize, Deserialize, Component)]
 pub enum ServerMessages {
     PlayerCreate {
+        server_entity: Entity,
         client_id: ClientId,
         position: Vec3,
-        entity: Entity,
     },
     PlayerRemove {
         client_id: ClientId,

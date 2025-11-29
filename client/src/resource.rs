@@ -11,7 +11,7 @@ pub struct PlayerEntities {
 pub struct ClientLobby {
     pub players: HashMap<ClientId, PlayerEntities>,
     pub ennemies: HashMap<Entity, Entity>,
-    pub weapons: HashMap<Entity, Entity>,
+    pub projectiles: HashMap<Entity, Entity>,
 }
 
 impl ClientLobby {
@@ -51,15 +51,15 @@ impl ClientLobby {
         self.ennemies.get(server_entity)
     }
 
-    pub fn add_weapon(&mut self, server_entity: Entity, client_entity: Entity) {
-        self.weapons.insert(server_entity, client_entity);
+    pub fn add_projectile(&mut self, server_entity: Entity, client_entity: Entity) {
+        self.projectiles.insert(server_entity, client_entity);
     }
 
-    pub fn remove_weapon(&mut self, server_entity: &Entity) -> Option<Entity> {
-        self.weapons.remove(server_entity)
+    pub fn remove_projectile(&mut self, server_entity: &Entity) -> Option<Entity> {
+        self.projectiles.remove(server_entity)
     }
-    pub fn get_weapon_entity(&self, server_entity: &Entity) -> Option<&Entity> {
-        self.weapons.get(server_entity)
+    pub fn get_projectile_entity(&self, server_entity: &Entity) -> Option<&Entity> {
+        self.projectiles.get(server_entity)
     }
 }
 

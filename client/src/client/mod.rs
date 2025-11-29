@@ -1,14 +1,18 @@
-pub(crate) mod event;
+mod handler;
 pub mod input;
+pub(crate) mod message_routing;
 pub mod position_sync;
 
-use crate::client::event::handle_disconnect_user;
 use crate::resource::ClientLobby;
 use bevy::prelude::*;
 use bevy_renet::netcode::{NetcodeClientPlugin, NetcodeTransportError};
+use bevy_renet::renet::RenetClient;
 
 #[derive(Resource, SystemSet, Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct Connected;
+
+#[derive(Event)]
+pub struct DisconnectUser;
 
 pub(super) fn plugin(app: &mut App) {
     app.add_plugins(NetcodeClientPlugin);
@@ -25,4 +29,9 @@ fn panic_on_error_system(mut renet_error: MessageReader<NetcodeTransportError>) 
     for e in renet_error.read() {
         panic!("{}", e);
     }
+}
+
+fn handle_disconnect_user(_trigger: On<DisconnectUser>, mut client: ResMut<RenetClient>) {
+    client.disconnect();
+    info!("Déconnexion du serveur demandée par l'utilisateur");
 }

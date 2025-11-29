@@ -1,11 +1,13 @@
+use crate::resource::ClientLobby;
 use avian2d::prelude::CollisionStart;
-use bevy::prelude::{Commands, MessageReader, Query};
+use bevy::prelude::{Commands, MessageReader, Query, Res};
 use game_core::projectile::Projectile;
 use std::collections::HashSet;
 
-pub fn collision(
+pub fn projectiles_client_cleanup(
     mut commands: Commands,
     mut collision_reader: MessageReader<CollisionStart>,
+    lobby: Res<ClientLobby>,
     projectile_query: Query<&Projectile>,
 ) {
     let mut despawned_projectiles = HashSet::new();
@@ -15,6 +17,11 @@ pub fn collision(
             if despawned_projectiles.contains(&entity) {
                 return;
             }
+
+            if lobby.get_projectile_entity(&entity).is_none() {
+                return;
+            }
+
             if projectile_query.get(entity).is_ok() {
                 commands.entity(entity).despawn();
                 despawned_projectiles.insert(entity);

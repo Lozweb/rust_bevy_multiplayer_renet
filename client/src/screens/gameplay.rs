@@ -1,4 +1,4 @@
-use crate::client::event::on_client_event;
+use crate::client::message_routing::on_client_event;
 use crate::client::position_sync::*;
 use crate::client::Connected;
 use crate::game::level::spawn_level;
