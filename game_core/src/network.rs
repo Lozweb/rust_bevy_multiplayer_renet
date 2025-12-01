@@ -33,17 +33,15 @@ pub fn get_socket(socket_address: SocketAddr) -> UdpSocket {
 
 #[derive(Debug, Serialize, Deserialize, Component)]
 pub enum ServerChannel {
-    Snapshots,
-    CriticalEvents,
-    ReliableState,
+    EntitiesPosition,
+    EntityEvent,
 }
 
 impl From<ServerChannel> for u8 {
     fn from(channel_id: ServerChannel) -> Self {
         match channel_id {
-            ServerChannel::Snapshots => 0,
-            ServerChannel::CriticalEvents => 1,
-            ServerChannel::ReliableState => 2,
+            ServerChannel::EntitiesPosition => 0,
+            ServerChannel::EntityEvent => 1,
         }
     }
 }
@@ -52,19 +50,12 @@ impl ServerChannel {
     pub fn channel_config() -> Vec<ChannelConfig> {
         vec![
             ChannelConfig {
-                channel_id: ServerChannel::Snapshots.into(),
+                channel_id: ServerChannel::EntitiesPosition.into(),
                 max_memory_usage_bytes: 5 * 1024 * 1024,
                 send_type: SendType::Unreliable,
             },
             ChannelConfig {
-                channel_id: ServerChannel::CriticalEvents.into(),
-                max_memory_usage_bytes: 2 * 1024 * 1024,
-                send_type: SendType::ReliableOrdered {
-                    resend_time: Duration::from_millis(100),
-                },
-            },
-            ChannelConfig {
-                channel_id: ServerChannel::ReliableState.into(),
+                channel_id: ServerChannel::EntityEvent.into(),
                 max_memory_usage_bytes: 5 * 1024 * 1024,
                 send_type: SendType::ReliableOrdered {
                     resend_time: Duration::from_millis(250),
@@ -144,10 +135,7 @@ where
     }
 }
 
-pub fn serialize_message<T: MessageSerialize>(message: &T) -> Vec<u8>
-where
-    T: Serialize,
-{
+pub fn serialize_message<T: MessageSerialize + Serialize>(message: &T) -> Vec<u8> {
     bincode::serde::encode_to_vec(message, bincode::config::standard()).unwrap_or_else(|err| {
         error!("Serialization error: {:?}", err);
         Vec::new()

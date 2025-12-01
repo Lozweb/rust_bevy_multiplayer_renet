@@ -1,7 +1,10 @@
+mod enemy_message;
 mod handler;
-pub mod input;
 pub(crate) mod message_routing;
+pub mod player_input;
+mod player_message;
 pub mod position_sync;
+mod projectil_message;
 
 use crate::resource::ClientLobby;
 use bevy::prelude::*;

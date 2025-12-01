@@ -3,8 +3,9 @@ use bevy::math::Vec3;
 use bevy::prelude::{Assets, ColorMaterial, Commands, Entity, Mesh, Query, ResMut, Transform};
 use bevy_renet::renet::{ClientId, RenetServer};
 use game_core::enemy::{Enemy, EnemyServerEntity};
+use game_core::network::ServerChannel;
 use game_core::player::{spawn_player, AimDirection, MovementController, PlayerInfo};
-use game_core::server::ServerMessages;
+use game_core::server::{EnemyMessages, PlayerMessages, ServerReliableMessages};
 use tracing::info;
 
 pub fn client_connected(
@@ -35,12 +36,13 @@ pub fn client_connected(
         client_id, server_entity, position
     );
 
-    ServerMessages::broadcast(
-        &ServerMessages::PlayerCreate {
+    ServerReliableMessages::broadcast(
+        &ServerReliableMessages::PlayerEvent(PlayerMessages::PlayerCreate {
             server_entity,
             client_id,
             position,
-        },
+        }),
+        ServerChannel::EntityEvent,
         server,
     );
 }
@@ -56,7 +58,11 @@ pub fn client_disconnected(
         lobby.remove_player(&client_id);
         info!("PlayerRemoved {:?}", client_id);
     }
-    ServerMessages::broadcast(&ServerMessages::PlayerRemove { client_id }, server);
+    ServerReliableMessages::broadcast(
+        &ServerReliableMessages::PlayerEvent(PlayerMessages::PlayerRemove { client_id }),
+        ServerChannel::EntityEvent,
+        server,
+    );
 }
 
 fn sending_existing_enemies(
@@ -65,13 +71,18 @@ fn sending_existing_enemies(
     server: &mut ResMut<RenetServer>,
 ) {
     for (transform, enemy, entity) in enemies.iter() {
-        ServerMessages::send(
+        info!(
+            "Sending existing enemy to client {:?}: {:?}",
+            client_id, entity.server_entity
+        );
+        ServerReliableMessages::send(
             &client_id,
-            &ServerMessages::EnemySpawned {
+            &ServerReliableMessages::EnemyEvent(EnemyMessages::EnemySpawned {
                 server_entity: entity.server_entity,
                 enemy_type: enemy.enemy_type,
                 position: transform.translation,
-            },
+            }),
+            ServerChannel::EntityEvent,
             server,
         );
     }
@@ -83,13 +94,18 @@ fn sending_existing_players(
     server: &mut ResMut<RenetServer>,
 ) {
     for (server_entity, player_info, transform) in players.iter() {
-        ServerMessages::send(
+        info!(
+            "Sending existing player to client {:?}: {:?}",
+            client_id, player_info.id
+        );
+        ServerReliableMessages::send(
             &client_id,
-            &ServerMessages::PlayerCreate {
+            &ServerReliableMessages::PlayerEvent(PlayerMessages::PlayerCreate {
                 server_entity,
                 client_id: player_info.id,
                 position: transform.translation,
-            },
+            }),
+            ServerChannel::EntityEvent,
             server,
         );
     }

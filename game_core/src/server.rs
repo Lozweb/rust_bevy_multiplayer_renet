@@ -13,7 +13,55 @@ pub struct NetworkedEnemyData {
 }
 
 #[derive(Debug, Serialize, Deserialize, Component)]
-pub enum ServerMessages {
+pub enum ServerReliableMessages {
+    EnemyEvent(EnemyMessages),
+    PlayerEvent(PlayerMessages),
+    ProjectileEvent(ProjectileMessages),
+    ErrorMessage { reason: String },
+}
+
+#[derive(Debug, Serialize, Deserialize, Component)]
+pub enum ServerUnreliableMessages {
+    EnemyPositionsEvent(EnemyPositionMessages),
+    PlayerPositionsEvent(PlayerPositionMessages),
+    ErrorMessage { cause: String },
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub enum EnemyMessages {
+    EnemySpawned {
+        server_entity: Entity,
+        enemy_type: EnemyType,
+        position: Vec3,
+    },
+    EnemyDeath {
+        server_entity: Entity,
+    },
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub enum EnemyPositionMessages {
+    EnemyPositionsUpdate { enemy_data: Vec<NetworkedEnemyData> },
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub enum ProjectileMessages {
+    ProjectileSpawned {
+        server_entity: Entity,
+        damage: u32,
+        position: Vec3,
+        direction: f32,
+    },
+    ProjectileCollision {
+        server_entity: Entity,
+    },
+    ProjectileCleanup {
+        server_entity: Entity,
+    },
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub enum PlayerMessages {
     PlayerCreate {
         server_entity: Entity,
         client_id: ClientId,
@@ -22,63 +70,52 @@ pub enum ServerMessages {
     PlayerRemove {
         client_id: ClientId,
     },
+}
+#[derive(Debug, Serialize, Deserialize)]
+pub enum PlayerPositionMessages {
     PlayerPositionUpdate {
         client_id: ClientId,
         position: Vec3,
         velocity: Vec2,
         aim_direction: f32,
     },
-    EnemySpawned {
-        server_entity: Entity,
-        enemy_type: EnemyType,
-        position: Vec3,
-    },
-    EnemyPositions(Vec<NetworkedEnemyData>),
-    ProjectileSpawned {
-        server_entity: Entity,
-        damage: u32,
-        position: Vec3,
-        direction: f32,
-    },
-    EnemyDeath {
-        server_entity: Entity,
-    },
-    ProjectileCollision {
-        server_entity: Entity,
-    },
-    ProjectileCleanup {
-        server_entity: Entity,
-    },
-    ErrorMessage {
-        reason: String,
-    },
 }
 
-impl crate::network::DeserializeErrorFallback for ServerMessages {
+impl crate::network::DeserializeErrorFallback for ServerReliableMessages {
     fn deserialize_error(err: DecodeError) -> Self {
-        ServerMessages::ErrorMessage {
+        ServerReliableMessages::ErrorMessage {
             reason: format!("Failed to deserialize ServerMessages: {}", err),
         }
     }
 }
 
-impl ServerMessages {
-    pub fn broadcast(server_message: &ServerMessages, server: &mut ResMut<RenetServer>) {
-        server.broadcast_message(
-            ServerChannel::ReliableState,
-            ServerMessages::to_bytes(server_message),
-        );
+impl crate::network::DeserializeErrorFallback for ServerUnreliableMessages {
+    fn deserialize_error(err: DecodeError) -> Self {
+        ServerUnreliableMessages::ErrorMessage {
+            cause: format!("Failed to deserialize ServerMessages: {}", err),
+        }
+    }
+}
+
+impl ServerReliableMessages {
+    pub fn broadcast(
+        server_message: &ServerReliableMessages,
+        chanel: ServerChannel,
+        server: &mut ResMut<RenetServer>,
+    ) {
+        server.broadcast_message(chanel, ServerReliableMessages::to_bytes(server_message));
     }
 
     pub fn send(
         client_id: &ClientId,
-        server_message: &ServerMessages,
+        server_message: &ServerReliableMessages,
+        chanel: ServerChannel,
         server: &mut ResMut<RenetServer>,
     ) {
         server.send_message(
             *client_id,
-            ServerChannel::ReliableState,
-            ServerMessages::to_bytes(server_message),
+            chanel,
+            ServerReliableMessages::to_bytes(server_message),
         );
     }
 }

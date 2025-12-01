@@ -1,14 +1,12 @@
-use crate::client::handler::{
-    enemy_death, enemy_spawned, player_create, player_remove, projectile_collision,
-    projectile_spawned,
-};
+use crate::client::enemy_message::enemy_message;
+use crate::client::player_message::player_message;
+use crate::client::projectil_message::projectile_message;
 use crate::game::level::Level;
 use crate::resource::{ClientLobby, CurrentClientId};
-use bevy::log::error;
 use bevy::prelude::*;
 use bevy_renet::renet::RenetClient;
 use game_core::network::{MessageDeserialize, ServerChannel};
-use game_core::server::ServerMessages;
+use game_core::server::ServerReliableMessages;
 
 pub fn on_client_event(
     current_client_id: Option<Res<CurrentClientId>>,
@@ -23,67 +21,39 @@ pub fn on_client_event(
         return;
     };
 
-    while let Some(event) = client.receive_message(ServerChannel::ReliableState) {
-        match ServerMessages::from_bytes(&event) {
-            ServerMessages::PlayerCreate {
-                server_entity,
-                client_id,
-                position,
-            } => player_create(
-                client_id,
-                server_entity,
-                position,
-                &mut lobby,
-                &mut commands,
-                &mut meshes,
-                &mut materials,
-                &level_query,
-            ),
-            ServerMessages::PlayerRemove { client_id } => {
-                player_remove(client_id, &mut lobby, &mut commands)
+    while let Some(event) = client.receive_message(ServerChannel::EntityEvent) {
+        match ServerReliableMessages::from_bytes(&event) {
+            ServerReliableMessages::PlayerEvent(message) => {
+                player_message(
+                    message,
+                    &mut lobby,
+                    &mut commands,
+                    &mut meshes,
+                    &mut materials,
+                    &level_query,
+                );
             }
-            ServerMessages::EnemySpawned {
-                server_entity,
-                enemy_type,
-                position,
-            } => enemy_spawned(
-                server_entity,
-                enemy_type,
-                position,
-                &mut lobby,
-                &mut commands,
-                &mut meshes,
-                &mut materials,
-            ),
-
-            ServerMessages::EnemyDeath { server_entity } => {
-                enemy_death(server_entity, &mut lobby, &mut commands)
+            ServerReliableMessages::EnemyEvent(message) => {
+                enemy_message(
+                    message,
+                    &mut lobby,
+                    &mut commands,
+                    &mut meshes,
+                    &mut materials,
+                );
             }
-
-            ServerMessages::ProjectileSpawned {
-                server_entity,
-                damage,
-                position,
-                direction,
-            } => projectile_spawned(
-                server_entity,
-                damage,
-                position,
-                direction,
-                &mut lobby,
-                &mut commands,
-                &mut meshes,
-                &mut materials,
-            ),
-
-            ServerMessages::ProjectileCollision { server_entity } => {
-                projectile_collision(server_entity, &mut lobby, &mut commands)
+            ServerReliableMessages::ProjectileEvent(message) => {
+                projectile_message(
+                    message,
+                    &mut lobby,
+                    &mut commands,
+                    &mut meshes,
+                    &mut materials,
+                );
             }
-
-            ServerMessages::ErrorMessage { reason } => {
-                error!("{}", reason);
+            ServerReliableMessages::ErrorMessage { reason } => {
+                warn!("Received error message from server: {}", reason);
             }
-            _ => {}
         }
     }
 }

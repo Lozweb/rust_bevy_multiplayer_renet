@@ -1,4 +1,4 @@
-use crate::client::input::input_sync_system;
+use crate::client::player_input::input_sync_system;
 use crate::client::Connected;
 use crate::game::camera::MainCamera;
 use crate::{asset_tracking::LoadResource, AppSystems, PausableSystems};

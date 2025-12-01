@@ -63,6 +63,7 @@ pub fn enemy_spawned(
     meshes: &mut Option<ResMut<Assets<Mesh>>>,
     materials: &mut Option<ResMut<Assets<ColorMaterial>>>,
 ) {
+    info!("Spawning: {server_entity}");
     let e1 = spawn_enemy(commands, position, enemy_type, meshes, materials);
     commands
         .entity(e1)

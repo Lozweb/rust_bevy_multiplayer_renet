@@ -4,7 +4,9 @@ use bevy_renet::renet::RenetServer;
 use game_core::enemy::Enemy;
 use game_core::network::{MessageSerialize, ServerChannel};
 use game_core::player::{AimDirection, PlayerInfo};
-use game_core::server::{NetworkedEnemyData, ServerMessages};
+use game_core::server::EnemyPositionMessages::EnemyPositionsUpdate;
+use game_core::server::PlayerPositionMessages::PlayerPositionUpdate;
+use game_core::server::{NetworkedEnemyData, ServerUnreliableMessages};
 
 #[derive(Resource)]
 pub struct PlayersPositionTimer {
@@ -46,13 +48,15 @@ pub fn sync_players_position(
 
     for (player_info, transform, velocity, aim_direction) in players.iter() {
         server.broadcast_message(
-            ServerChannel::Snapshots,
-            ServerMessages::to_bytes(&ServerMessages::PlayerPositionUpdate {
-                client_id: player_info.id,
-                position: transform.translation,
-                velocity: velocity.0,
-                aim_direction: aim_direction.0,
-            }),
+            ServerChannel::EntitiesPosition,
+            ServerUnreliableMessages::to_bytes(&ServerUnreliableMessages::PlayerPositionsEvent(
+                PlayerPositionUpdate {
+                    client_id: player_info.id,
+                    position: transform.translation,
+                    velocity: velocity.0,
+                    aim_direction: aim_direction.0,
+                },
+            )),
         );
     }
 }
@@ -80,8 +84,10 @@ pub fn sync_enemies_positions(
 
     if !enemy_data.is_empty() {
         server.broadcast_message(
-            ServerChannel::Snapshots,
-            ServerMessages::to_bytes(&ServerMessages::EnemyPositions(enemy_data)),
+            ServerChannel::EntitiesPosition,
+            ServerUnreliableMessages::to_bytes(&ServerUnreliableMessages::EnemyPositionsEvent(
+                EnemyPositionsUpdate { enemy_data },
+            )),
         );
     }
 }

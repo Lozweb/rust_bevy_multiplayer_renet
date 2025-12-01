@@ -2,8 +2,9 @@ use avian2d::prelude::CollisionStart;
 use bevy::prelude::*;
 use bevy_renet::renet::RenetServer;
 use game_core::enemy::Enemy;
+use game_core::network::ServerChannel;
 use game_core::projectile::{Projectile, ProjectileLifeTime};
-use game_core::server::ServerMessages;
+use game_core::server::{EnemyMessages, ProjectileMessages, ServerReliableMessages};
 use std::collections::HashSet;
 
 pub fn collision(
@@ -33,10 +34,11 @@ pub fn collision(
             enemy.apply_damage(projectile.damage);
 
             if enemy.is_dead() {
-                ServerMessages::broadcast(
-                    &ServerMessages::EnemyDeath {
+                ServerReliableMessages::broadcast(
+                    &ServerReliableMessages::EnemyEvent(EnemyMessages::EnemyDeath {
                         server_entity: target_entity,
-                    },
+                    }),
+                    ServerChannel::EntityEvent,
                     &mut server,
                 );
                 commands.entity(target_entity).despawn();
@@ -75,10 +77,11 @@ fn cleanup_expired_projectiles(
     entity: &Entity,
 ) {
     info!("Cleaning up expired projectiles");
-    ServerMessages::broadcast(
-        &ServerMessages::ProjectileCleanup {
+    ServerReliableMessages::broadcast(
+        &ServerReliableMessages::ProjectileEvent(ProjectileMessages::ProjectileCleanup {
             server_entity: *entity,
-        },
+        }),
+        ServerChannel::EntityEvent,
         server,
     );
     commands.entity(*entity).despawn();
@@ -90,10 +93,11 @@ fn mark_projectile_despawn(
     entity: Entity,
     despawn_set: &mut HashSet<Entity>,
 ) {
-    ServerMessages::broadcast(
-        &ServerMessages::ProjectileCollision {
+    ServerReliableMessages::broadcast(
+        &ServerReliableMessages::ProjectileEvent(ProjectileMessages::ProjectileCollision {
             server_entity: entity,
-        },
+        }),
+        ServerChannel::EntityEvent,
         server,
     );
     commands.entity(entity).despawn();

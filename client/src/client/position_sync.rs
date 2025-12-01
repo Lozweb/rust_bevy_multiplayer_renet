@@ -5,7 +5,11 @@ use bevy_renet::renet::RenetClient;
 use game_core::enemy::Enemy;
 use game_core::network::{MessageDeserialize, ServerChannel};
 use game_core::player::{AimDirection, ControlledPlayer};
-use game_core::server::ServerMessages;
+use game_core::server::EnemyPositionMessages::EnemyPositionsUpdate;
+use game_core::server::ServerUnreliableMessages::{
+    EnemyPositionsEvent, ErrorMessage, PlayerPositionsEvent,
+};
+use game_core::server::{PlayerPositionMessages, ServerUnreliableMessages};
 use game_core::NetworkedTransform;
 
 /// Paramètres de réconciliation pour le joueur local.
@@ -24,14 +28,14 @@ pub fn receive_position_updates(
     mut players: Query<&mut NetworkedTransform, With<Player>>,
     mut enemies: Query<(&mut NetworkedTransform, &mut Enemy), Without<Player>>,
 ) {
-    while let Some(message) = client.receive_message(ServerChannel::Snapshots) {
-        match ServerMessages::from_bytes(&message) {
-            ServerMessages::PlayerPositionUpdate {
+    while let Some(message) = client.receive_message(ServerChannel::EntitiesPosition) {
+        match ServerUnreliableMessages::from_bytes(&message) {
+            PlayerPositionsEvent(PlayerPositionMessages::PlayerPositionUpdate {
                 client_id,
                 position,
                 velocity,
                 aim_direction,
-            } => {
+            }) => {
                 if let Some(player_entities) = lobby.get_player_entities(&client_id)
                     && let Ok(mut networked_transform) =
                         players.get_mut(player_entities.client_entity)
@@ -42,8 +46,8 @@ pub fn receive_position_updates(
                     networked_transform.last_update_time = time.elapsed_secs();
                 }
             }
-            ServerMessages::EnemyPositions(enemies_data) => {
-                for data in enemies_data {
+            EnemyPositionsEvent(EnemyPositionsUpdate { enemy_data }) => {
+                for data in enemy_data {
                     if let Some(client_entity) = lobby.get_enemy_entity(&data.server_entity)
                         && let Ok((mut network_transform, mut enemy_component)) =
                             enemies.get_mut(*client_entity)
@@ -57,7 +61,9 @@ pub fn receive_position_updates(
                     }
                 }
             }
-            _ => { /* Ignorer les autres messages */ }
+            ErrorMessage { cause: reason } => {
+                error!("Erreur : {}", reason);
+            }
         }
     }
 }
