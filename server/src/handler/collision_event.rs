@@ -1,13 +1,13 @@
+use crate::network::{broadcast_enemy_event, broadcast_projectile_event};
 use avian2d::prelude::CollisionStart;
 use bevy::prelude::*;
 use bevy_renet::renet::RenetServer;
 use game_core::enemy::Enemy;
-use game_core::network::ServerChannel;
 use game_core::projectile::{Projectile, ProjectileLifeTime};
-use game_core::server::{EnemyMessages, ProjectileMessages, ServerReliableMessages};
+use game_core::server::{EnemyMessages, ProjectileMessages};
 use std::collections::HashSet;
 
-pub fn collision(
+pub fn collision_event(
     mut commands: Commands,
     mut server: ResMut<RenetServer>,
     time: Res<Time>,
@@ -34,12 +34,11 @@ pub fn collision(
             enemy.apply_damage(projectile.damage);
 
             if enemy.is_dead() {
-                ServerReliableMessages::broadcast(
-                    &ServerReliableMessages::EnemyEvent(EnemyMessages::EnemyDeath {
-                        server_entity: target_entity,
-                    }),
-                    ServerChannel::EntityEvent,
+                broadcast_enemy_event(
                     &mut server,
+                    EnemyMessages::EnemyDeath {
+                        server_entity: target_entity,
+                    },
                 );
                 commands.entity(target_entity).despawn();
             }
@@ -77,12 +76,11 @@ fn cleanup_expired_projectiles(
     entity: &Entity,
 ) {
     info!("Cleaning up expired projectiles");
-    ServerReliableMessages::broadcast(
-        &ServerReliableMessages::ProjectileEvent(ProjectileMessages::ProjectileCleanup {
-            server_entity: *entity,
-        }),
-        ServerChannel::EntityEvent,
+    broadcast_projectile_event(
         server,
+        ProjectileMessages::ProjectileCleanup {
+            server_entity: *entity,
+        },
     );
     commands.entity(*entity).despawn();
 }
@@ -93,12 +91,11 @@ fn mark_projectile_despawn(
     entity: Entity,
     despawn_set: &mut HashSet<Entity>,
 ) {
-    ServerReliableMessages::broadcast(
-        &ServerReliableMessages::ProjectileEvent(ProjectileMessages::ProjectileCollision {
-            server_entity: entity,
-        }),
-        ServerChannel::EntityEvent,
+    broadcast_projectile_event(
         server,
+        ProjectileMessages::ProjectileCollision {
+            server_entity: entity,
+        },
     );
     commands.entity(entity).despawn();
     despawn_set.insert(entity);

@@ -1,5 +1,5 @@
+use crate::handler::player_event;
 use crate::resource::server_lobby::ServerLobby;
-use crate::system::hanlder::{client_connected, client_disconnected};
 use bevy::asset::Assets;
 use bevy::mesh::Mesh;
 use bevy::prelude::*;
@@ -7,7 +7,7 @@ use bevy_renet::renet::{RenetServer, ServerEvent};
 use game_core::enemy::{Enemy, EnemyServerEntity};
 use game_core::player::PlayerInfo;
 
-pub fn on_server_event(
+pub fn server_event(
     players: Query<(Entity, &PlayerInfo, &Transform)>,
     enemies: Query<(&Transform, &Enemy, &EnemyServerEntity)>,
     mut server: ResMut<RenetServer>,
@@ -19,7 +19,7 @@ pub fn on_server_event(
 ) {
     for event in server_event_reader.read() {
         match event {
-            ServerEvent::ClientConnected { client_id } => client_connected(
+            ServerEvent::ClientConnected { client_id } => player_event::client_connected(
                 *client_id,
                 &mut commands,
                 &mut meshes,
@@ -29,9 +29,12 @@ pub fn on_server_event(
                 players,
                 enemies,
             ),
-            ServerEvent::ClientDisconnected { client_id, .. } => {
-                client_disconnected(*client_id, &mut lobby, &mut commands, &mut server)
-            }
+            ServerEvent::ClientDisconnected { client_id, .. } => player_event::client_disconnected(
+                *client_id,
+                &mut lobby,
+                &mut commands,
+                &mut server,
+            ),
         }
     }
 }

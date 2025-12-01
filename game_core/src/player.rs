@@ -1,15 +1,27 @@
 use bevy::asset::Assets;
 use bevy::math::{Vec2, Vec3};
 use bevy::mesh::{Mesh, Mesh2d};
-use bevy::prelude::ReflectComponent;
 use bevy::prelude::ReflectResource;
 use bevy::prelude::{
     Circle, ColorMaterial, Commands, Component, Deref, Entity, MeshMaterial2d, Reflect, ResMut,
     Resource, Transform, Visibility,
 };
+use bevy::prelude::{ReflectComponent, Timer, TimerMode};
 use bevy_renet::renet::ClientId;
 use serde::{Deserialize, Serialize};
 
+#[derive(Resource)]
+pub struct PlayersPositionTimer {
+    pub timer: Timer,
+}
+
+impl Default for PlayersPositionTimer {
+    fn default() -> Self {
+        Self {
+            timer: Timer::from_seconds(0.033, TimerMode::Repeating),
+        }
+    }
+}
 #[derive(Debug, Default, Clone, Copy, Serialize, Deserialize, Component, Resource)]
 pub struct PlayerInput {
     pub up: bool,

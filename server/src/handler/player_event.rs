@@ -1,11 +1,14 @@
+use crate::handler::enemy_event::sending_existing_enemies;
+use crate::network::{broadcast_player_event, send_player_event};
 use crate::resource::server_lobby::ServerLobby;
+use bevy::asset::Assets;
 use bevy::math::Vec3;
-use bevy::prelude::{Assets, ColorMaterial, Commands, Entity, Mesh, Query, ResMut, Transform};
+use bevy::mesh::Mesh;
+use bevy::prelude::{ColorMaterial, Commands, Entity, Query, ResMut, Transform};
 use bevy_renet::renet::{ClientId, RenetServer};
 use game_core::enemy::{Enemy, EnemyServerEntity};
-use game_core::network::ServerChannel;
 use game_core::player::{spawn_player, AimDirection, MovementController, PlayerInfo};
-use game_core::server::{EnemyMessages, PlayerMessages, ServerReliableMessages};
+use game_core::server::PlayerMessages;
 use tracing::info;
 
 pub fn client_connected(
@@ -36,14 +39,13 @@ pub fn client_connected(
         client_id, server_entity, position
     );
 
-    ServerReliableMessages::broadcast(
-        &ServerReliableMessages::PlayerEvent(PlayerMessages::PlayerCreate {
+    broadcast_player_event(
+        server,
+        PlayerMessages::PlayerCreate {
             server_entity,
             client_id,
             position,
-        }),
-        ServerChannel::EntityEvent,
-        server,
+        },
     );
 }
 
@@ -58,34 +60,8 @@ pub fn client_disconnected(
         lobby.remove_player(&client_id);
         info!("PlayerRemoved {:?}", client_id);
     }
-    ServerReliableMessages::broadcast(
-        &ServerReliableMessages::PlayerEvent(PlayerMessages::PlayerRemove { client_id }),
-        ServerChannel::EntityEvent,
-        server,
-    );
-}
 
-fn sending_existing_enemies(
-    client_id: ClientId,
-    enemies: &Query<(&Transform, &Enemy, &EnemyServerEntity)>,
-    server: &mut ResMut<RenetServer>,
-) {
-    for (transform, enemy, entity) in enemies.iter() {
-        info!(
-            "Sending existing enemy to client {:?}: {:?}",
-            client_id, entity.server_entity
-        );
-        ServerReliableMessages::send(
-            &client_id,
-            &ServerReliableMessages::EnemyEvent(EnemyMessages::EnemySpawned {
-                server_entity: entity.server_entity,
-                enemy_type: enemy.enemy_type,
-                position: transform.translation,
-            }),
-            ServerChannel::EntityEvent,
-            server,
-        );
-    }
+    broadcast_player_event(server, PlayerMessages::PlayerRemove { client_id });
 }
 
 fn sending_existing_players(
@@ -98,19 +74,18 @@ fn sending_existing_players(
             "Sending existing player to client {:?}: {:?}",
             client_id, player_info.id
         );
-        ServerReliableMessages::send(
-            &client_id,
-            &ServerReliableMessages::PlayerEvent(PlayerMessages::PlayerCreate {
+
+        send_player_event(
+            client_id,
+            server,
+            PlayerMessages::PlayerCreate {
                 server_entity,
                 client_id: player_info.id,
                 position: transform.translation,
-            }),
-            ServerChannel::EntityEvent,
-            server,
+            },
         );
     }
 }
-
 fn rand_position() -> Vec3 {
     let quadrant = fastrand::u8(0..4);
     match quadrant {

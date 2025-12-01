@@ -1,4 +1,4 @@
-use crate::client::handler::{enemy_death, enemy_spawned};
+use crate::client::client_event::{enemy_death, enemy_spawned};
 use crate::resource::ClientLobby;
 use bevy::asset::Assets;
 use bevy::mesh::Mesh;

@@ -1,4 +1,4 @@
-use crate::client::handler::{player_create, player_remove};
+use crate::client::client_event::{player_create, player_remove};
 use crate::game::level::Level;
 use crate::resource::ClientLobby;
 use bevy::asset::Assets;

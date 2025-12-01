@@ -1,12 +1,12 @@
+use crate::network::broadcast_projectile_event;
 use crate::resource::server_lobby::ServerLobby;
 use bevy::prelude::*;
 use bevy_renet::renet::RenetServer;
 use game_core::client::ClientMessage;
-use game_core::network::{ClientChannel, MessageDeserialize, ServerChannel};
+use game_core::network::{ClientChannel, MessageDeserialize};
 use game_core::player::{AimDirection, MovementController};
 use game_core::projectile::{spawn_projectil, Projectile};
 use game_core::server::ProjectileMessages::ProjectileSpawned;
-use game_core::server::ServerReliableMessages;
 
 pub fn process_client_inputs(
     mut commands: Commands,
@@ -116,14 +116,13 @@ fn handle_shoot(
         materials,
     );
 
-    ServerReliableMessages::broadcast(
-        &ServerReliableMessages::ProjectileEvent(ProjectileSpawned {
+    broadcast_projectile_event(
+        server,
+        ProjectileSpawned {
             server_entity,
             damage: 10,
             position,
             direction: aim_direction.0,
-        }),
-        ServerChannel::EntityEvent,
-        server,
+        },
     );
 }

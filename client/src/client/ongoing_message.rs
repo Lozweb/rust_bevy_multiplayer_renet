@@ -1,6 +1,6 @@
-use crate::client::enemy_message::enemy_message;
-use crate::client::player_message::player_message;
-use crate::client::projectil_message::projectile_message;
+use crate::client::enemy_event_handler::enemy_message;
+use crate::client::player_event_handler::player_message;
+use crate::client::projectil_event_handler::projectile_message;
 use crate::game::level::Level;
 use crate::resource::{ClientLobby, CurrentClientId};
 use bevy::prelude::*;

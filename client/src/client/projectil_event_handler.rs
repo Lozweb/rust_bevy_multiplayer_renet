@@ -1,4 +1,4 @@
-use crate::client::handler::{projectile_collision, projectile_spawned};
+use crate::client::client_event::{projectile_cleanup, projectile_collision, projectile_spawned};
 use crate::resource::ClientLobby;
 use bevy::asset::Assets;
 use bevy::mesh::Mesh;
@@ -32,7 +32,7 @@ pub fn projectile_message(
             projectile_collision(server_entity, lobby, commands)
         }
         ProjectileMessages::ProjectileCleanup { server_entity } => {
-            // Handle projectile cleanup
+            projectile_cleanup(server_entity, lobby, commands)
         }
     }
 }

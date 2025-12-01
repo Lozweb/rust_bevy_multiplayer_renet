@@ -63,7 +63,6 @@ pub fn enemy_spawned(
     meshes: &mut Option<ResMut<Assets<Mesh>>>,
     materials: &mut Option<ResMut<Assets<ColorMaterial>>>,
 ) {
-    info!("Spawning: {server_entity}");
     let e1 = spawn_enemy(commands, position, enemy_type, meshes, materials);
     commands
         .entity(e1)
@@ -103,6 +102,14 @@ pub fn projectile_collision(
     lobby: &mut ClientLobby,
     commands: &mut Commands,
 ) {
+    projectile_despawned(server_entity, lobby, commands);
+}
+
+pub fn projectile_cleanup(server_entity: Entity, lobby: &mut ClientLobby, commands: &mut Commands) {
+    projectile_despawned(server_entity, lobby, commands);
+}
+
+fn projectile_despawned(server_entity: Entity, lobby: &mut ClientLobby, commands: &mut Commands) {
     if let Some(client_entity) = lobby.remove_projectile(&server_entity) {
         commands.entity(client_entity).despawn();
     }

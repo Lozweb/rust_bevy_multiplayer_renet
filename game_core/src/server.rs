@@ -97,6 +97,29 @@ impl crate::network::DeserializeErrorFallback for ServerUnreliableMessages {
     }
 }
 
+impl ServerUnreliableMessages {
+    pub fn broadcast(
+        server_message: &ServerUnreliableMessages,
+        chanel: ServerChannel,
+        server: &mut ResMut<RenetServer>,
+    ) {
+        server.broadcast_message(chanel, ServerUnreliableMessages::to_bytes(server_message));
+    }
+
+    pub fn send(
+        client_id: &ClientId,
+        server_message: &ServerUnreliableMessages,
+        chanel: ServerChannel,
+        server: &mut ResMut<RenetServer>,
+    ) {
+        server.send_message(
+            *client_id,
+            chanel,
+            ServerUnreliableMessages::to_bytes(server_message),
+        );
+    }
+}
+
 impl ServerReliableMessages {
     pub fn broadcast(
         server_message: &ServerReliableMessages,

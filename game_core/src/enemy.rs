@@ -8,6 +8,19 @@ const RESTITUTION_COEFFICIENT: f32 = 0.0;
 const FRICTION_COEFFICIENT: f32 = 0.1;
 const LINEAR_DAMPING: f32 = 5.0;
 
+#[derive(Resource)]
+pub struct EnemiesPositionTimer {
+    pub timer: Timer,
+}
+
+impl Default for EnemiesPositionTimer {
+    fn default() -> Self {
+        Self {
+            timer: Timer::from_seconds(0.033, TimerMode::Repeating),
+        }
+    }
+}
+
 #[derive(Component, Debug, Clone, Copy, Serialize, Deserialize, Reflect)]
 #[reflect(Component)]
 pub struct EnemyServerEntity {
