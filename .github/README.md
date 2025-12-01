@@ -6,9 +6,9 @@ Ce fichier contient les règles et bonnes pratiques pour le développement de ce
 
 Jeu multijoueur 2D développé avec :
 
-- **Bevy** (moteur de jeu)
+- **Bevy 0.17** (moteur de jeu ECS)
 - **Renet** (networking)
-- **Avian2D** (physique)
+- **Avian2D** (physique 2D)
 
 Architecture : **Full Server Authority**
 
@@ -18,13 +18,13 @@ Architecture : **Full Server Authority**
 
 ## Règles obligatoires
 
-Voir `.copilot/system_prompt.txt` pour toutes les règles détaillées.
+Voir `copilot-instructions.md` pour toutes les règles détaillées.
 
 ### Règles critiques
 
 1. **Vérifier imports** après chaque modification
 2. **Compiler systématiquement** : `cargo check --all`
-3. **Full Server Authority** : pas de physique côté client
+3. **Full Server Authority** : pas de physique côté client (sauf joueur local)
 4. **Documentation en français**
 5. **Zéro warnings** avant de terminer
 
@@ -32,28 +32,51 @@ Voir `.copilot/system_prompt.txt` pour toutes les règles détaillées.
 
 ```
 SERVEUR (Autoritaire)
-└─ Physique pour TOUS
-   └─ Broadcast 20Hz
+└─ Physique pour TOUS (joueurs + ennemis)
+   └─ Broadcast 30Hz (positions unreliable)
+   └─ Events reliable (spawn/despawn/mort)
 
-CLIENTS (Display)
-└─ Interpolation vers serveur
-   └─ Aucune physique propre
+CLIENTS (Display + Input)
+└─ Physique joueur local uniquement (avec réconciliation)
+   └─ Interpolation pour les autres entités
+   └─ Envoie inputs au serveur
 ```
+
+## Fonctionnalités implémentées
+
+- ✅ Mouvement multijoueur synchronisé (30Hz)
+- ✅ Système de tir avec projectiles
+- ✅ Ennemis avec santé et types différents
+- ✅ Collisions projectiles/ennemis
+- ✅ Interpolation fluide (joueurs et ennemis)
+- ✅ Réconciliation douce côté client
 
 ## Test standard
 
 ```bash
-cargo run --bin server                    # Terminal 1
-cargo run --bin client --features dev     # Terminal 2
-cargo run --bin client --features dev     # Terminal 3
+# Terminal 1 : Serveur
+cargo run --bin server
+
+# Terminal 2 : Client 1
+cargo run --bin client --features dev
+
+# Terminal 3 : Client 2
+cargo run --bin client --features dev
 ```
 
 ## Fichiers de documentation
 
-- `SESSION_COMPLETE.md` - Résumé complet de toutes les améliorations
-- `RESOLUTION_FINALE.md` - Solution finale de désynchronisation
-- `SOLUTION_DEFINITIVE.md` - Architecture détaillée
-- Divers `CORRECTION_*.md` - Historique des corrections
+- `copilot-instructions.md` - Règles complètes de développement
+- `ROADMAP.md` - Fonctionnalités implémentées et à venir
+- `BEVY_0_17.md` - Instructions spécifiques Bevy 0.17
+
+## Structure du projet
+
+```
+game_core/      Code partagé (components, messages réseau)
+server/         Logique autoritaire, physique, IA
+client/         Rendu, input, interpolation
+```
 
 ## Contact
 

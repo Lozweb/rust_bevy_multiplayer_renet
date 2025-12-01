@@ -50,20 +50,23 @@ RÈGLES OBLIGATOIRES
    ARCHITECTURE SERVEUR :
     - TOUS les joueurs ont : RigidBody + Collider + Mass + LinearVelocity
     - Physique Avian2D complète
-    - Broadcast positions à 20Hz (unreliable channel)
+    - Broadcast positions à 30Hz (unreliable channel)
 
    SYSTÈMES CLÉS :
    Client :
-    - record_player_directional_input : Capture inputs
+    - system_player_input : Capture inputs (shoot, mouvement, visée)
     - input_sync_system : Envoie au serveur
     - receive_position_updates : Reçoit pour TOUS
-    - interpolate_networked_players : Interpole TOUS
+    - interpolate_networked_players : Interpole joueurs
+    - interpolate_networked_enemies : Interpole ennemis
 
    Serveur :
-    - process_client_inputs : Reçoit inputs
-    - interpolate_movement_intent : Lisse changements
-    - apply_movement : Applique physique
-    - broadcast_player_positions : Broadcast 20Hz
+    - process_client_inputs : Reçoit inputs + handle_shoot
+    - interpolate_movement_intent : Lisse changements direction
+    - apply_movement : Applique physique via LinearVelocity
+    - sync_players_position : Broadcast joueurs @ 30Hz
+    - sync_enemies_positions : Broadcast ennemis @ 30Hz
+    - collision_event : Gère collisions projectiles/ennemis
 
 5. OPTIMISATIONS RÉSEAU
     - Envoyer inputs UNIQUEMENT si changement détecté
@@ -86,15 +89,22 @@ RÈGLES OBLIGATOIRES
     - Systèmes courts et focalisés (une responsabilité)
     - Filters de Query pour cibler précisément (With<T>, Without<T>)
     - CODE PARTAGÉ dans game_core :
-        * PlayerInput : snapshot des entrées réseau (Component + Resource)
+        * PlayerInput : snapshot des entrées réseau (Component + Resource) avec shoot
         * AimDirection : direction de visée (Component + Resource) #[reflect(Component, Resource)]
         * MovementController : contrôleur de mouvement (Component) #[reflect(Component)]
         * PlayerInfo : infos joueur (Component - id, nom)
         * ControlledPlayer : marqueur pour joueur local (Component)
         * MouseWorldCoords : position souris (Resource)
-        * ClientMessage : enum des messages client→serveur
-        * ServerMessages : enum des messages serveur→client
+        * Enemy : composant ennemi avec santé et type
+        * EnemyType : Basic, Medium, Hard avec stats différentes
+        * Projectile : composant projectile avec dégâts
+        * ProjectileLifeTime : timer pour despawn automatique
+        * ClientMessage : enum des messages client→serveur (Input, Command)
+        * ServerReliableMessages : enum des messages serveur→client (EnemyEvent, PlayerEvent, ProjectileEvent)
+        * ServerUnreliableMessages : positions @ 30Hz (EnemyPositionsEvent, PlayerPositionsEvent)
         * spawn_player : fonction de création d'entité joueur
+        * spawn_enemy : fonction de création d'entité ennemi
+        * spawn_projectil : fonction de création de projectile
 
 8. BEVY BEST PRACTICES
     - Préférer Query<&T> à Res<T> quand possible
@@ -183,6 +193,15 @@ if is_local { Dynamic + physique } else { Static }
 → Utiliser game_core pour le code partagé
 → MovementController, AimDirection, PlayerInput → dans game_core
 → Un seul endroit de définition = pas de désynchronisation de structure
+
+❌ NE JAMAIS oublier de désactiver le file watcher AssetPlugin sur le serveur
+→ Le serveur headless n'a pas de dossier assets/
+→ Warnings inutiles : "Skip creating file watcher because path does not exist"
+→ Pattern correct pour serveur :
+AssetPlugin {
+watch_for_changes_override: Some(false),
+..Default::default()
+}
 
 ═══════════════════════════════════════════════════════════════════
 WORKFLOW DE DÉVELOPPEMENT

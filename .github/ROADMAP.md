@@ -4,7 +4,7 @@
 
 ### Serveur en mode console uniquement
 
-**Date:** 2025-01-24  
+**Date:** 2025-12-01  
 **Décision:** Le serveur fonctionnera **uniquement en mode console** sans interface graphique.
 
 **Raisons:**
@@ -20,67 +20,169 @@
 - Pas de dépendances graphiques (Mesh2d, ColorMaterial, etc.)
 - Logging console pour le debugging
 - Possibilité d'ajouter une UI console/debug textuelle si nécessaire
+- Configuration `AssetPlugin` avec `watch_for_changes_override: Some(false)` pour éviter les warnings de file watcher
 
 ---
 
-## 🎯 Prochaine fonctionnalité: Système de tir coopératif
+## ✅ Système de tir coopératif - IMPLÉMENTÉ
 
-### Plan d'implémentation
+### État de l'implémentation
 
-**1. Composants partagés (game_core)**
+**1. Composants partagés (game_core)** ✅
 
-- [ ] Créer `game_core/src/combat.rs`
-- [ ] Définir composants: `Enemy`, `Projectile`, `Health`, `ProjectileOwner`
-- [ ] Système de collision layers (bitflags)
+- ✅ `game_core/src/enemy.rs` : Composant `Enemy`, `EnemyType`, `EnemyServerEntity`
+- ✅ `game_core/src/projectile.rs` : Composant `Projectile`, `ProjectileLifeTime`
+- ✅ Système de santé intégré dans `Enemy` (health, apply_damage, is_dead)
+- ✅ Bundles pour spawn facile: `enemy_bundle()`, `projectil_bundle()`
 
-**2. Système d'ennemis (serveur)**
+**2. Système d'ennemis (serveur)** ✅
 
-- [ ] Créer `server/src/system/enemy.rs`
-- [ ] Spawn d'ennemis (aléatoire simple pour MVP)
-- [ ] Gestion santé et despawn
+- ✅ `server/src/handler/enemy_event.rs` : Envoi ennemis existants aux nouveaux joueurs
+- ✅ `game_core/src/level.rs` : `spawn_initial_enemies()` - spawn 3 ennemis au démarrage
+- ✅ Gestion santé et despawn dans collision_event
+- ✅ Physique complète : RigidBody::Dynamic, Collider, Mass, LinearDamping
 
-**3. Système de projectiles (serveur)**
+**3. Système de projectiles (serveur)** ✅
 
-- [ ] Créer `server/src/system/projectile.rs`
-- [ ] Spawn basé sur input `shoot` + `AimDirection`
-- [ ] Physique avec Avian2D
-- [ ] Despawn automatique (distance/temps max)
+- ✅ `server/src/handler/player_input.rs` : `handle_shoot()` - spawn basé sur input
+- ✅ `game_core/src/projectile.rs` : `spawn_projectil()` avec physique Avian2D
+- ✅ Physique projectile : RigidBody::Dynamic, vélocité basée sur AimDirection
+- ✅ Timer de vie (`ProjectileLifeTime`) pour despawn automatique
 
-**4. Gestion des collisions (serveur)**
+**4. Gestion des collisions (serveur)** ✅
 
-- [ ] Créer `server/src/system/collision.rs`
-- [ ] Écouter événements `CollisionStarted`
-- [ ] Dégâts projectile → ennemi
-- [ ] Despawn projectile sur impact
-- [ ] Filtres: ignorer joueur ↔ projectile
+- ✅ `server/src/handler/collision_event.rs` : Système complet de collisions
+- ✅ Écoute `CollisionStart` via `MessageReader`
+- ✅ Dégâts projectile → ennemi avec `apply_damage()`
+- ✅ Despawn projectile sur impact (évite double-despawn avec HashSet)
+- ✅ Broadcast `EnemyDeath` et `ProjectileCollision`
 
-**5. Synchronisation réseau**
+**5. Synchronisation réseau** ✅
 
-- [ ] Créer `server/src/system/combat_sync.rs`
-- [ ] Messages: `ProjectileSpawn/Despawn`, `EnemySpawn/Update/Despawn`
-- [ ] Canal fiable pour spawn/despawn
-- [ ] Canal non-fiable pour positions (30Hz)
+- ✅ `game_core/src/server.rs` : Enums de messages réseau
+    - `EnemyMessages` : EnemySpawned, EnemyDeath
+    - `ProjectileMessages` : ProjectileSpawned, ProjectileCollision, ProjectileCleanup
+    - `EnemyPositionMessages` : EnemyPositionsUpdate @ 30Hz
+- ✅ `server/src/handler/position_sync.rs` : `sync_enemies_positions()` @ 30Hz
+- ✅ Canal reliable (`ServerReliableMessages`) pour spawn/despawn/mort
+- ✅ Canal unreliable (`ServerUnreliableMessages`) pour positions
 
-**6. Rendu client**
+**6. Rendu client** ✅
 
-- [ ] Créer `client/src/game/combat.rs`
-- [ ] Réception messages réseau
-- [ ] Spawn visuel (Mesh2d, sans physique)
-- [ ] Interpolation positions
+- ✅ `client/src/client/enemy_event_handler.rs` : Gestion messages ennemis
+- ✅ `client/src/client/projectil_event_handler.rs` : Gestion messages projectiles
+- ✅ `client/src/client/client_event.rs` : Spawn visuel (Mesh2d, ColorMaterial)
+- ✅ `client/src/client/position_sync_event.rs` : `interpolate_networked_enemies()`
+- ✅ Rendu sans physique côté client (NetworkedTransform uniquement)
 
-**7. Intégration**
+**7. Intégration** ✅
 
-- [ ] Ajout plugins dans `server/src/server.rs`
-- [ ] Ajout plugins dans client
-- [ ] Export module combat dans `game_core/src/lib.rs`
-- [ ] Configuration ordre des systèmes
+- ✅ Modules exportés dans `game_core/src/lib.rs`
+- ✅ Handlers intégrés dans `server/src/handler/mod.rs`
+- ✅ Systèmes configurés dans les schedules appropriés
+- ✅ Input `shoot` capturé et envoyé au serveur
 
-### Points clés
+### Architecture implémentée
 
-- ✅ Filtres de collision: projectiles touchent ennemis + murs (pas joueurs)
-- ✅ Architecture autoritaire côté serveur
-- ✅ Synchronisation fiable pour spawn/despawn
-- ✅ Hooks pour feedback visuel/audio (à implémenter après)
+**Structure serveur:**
+
+```
+server/src/
+├── handler/
+│   ├── collision_event.rs  ✅ Collisions projectile/ennemi
+│   ├── enemy_event.rs      ✅ Synchronisation ennemis
+│   ├── player_input.rs     ✅ Input shoot + spawn projectile
+│   └── position_sync.rs    ✅ Broadcast positions @ 30Hz
+└── level.rs                ✅ Setup niveau + spawn ennemis
+```
+
+**Structure game_core:**
+
+```
+game_core/src/
+├── enemy.rs        ✅ Enemy, EnemyType, spawn_enemy()
+├── projectile.rs   ✅ Projectile, spawn_projectil()
+├── level.rs        ✅ spawn_initial_enemies()
+└── server.rs       ✅ EnemyMessages, ProjectileMessages
+```
+
+**Structure client:**
+
+```
+client/src/client/
+├── enemy_event_handler.rs    ✅ Spawn/despawn ennemis
+├── projectil_event_handler.rs ✅ Spawn/despawn projectiles
+├── position_sync_event.rs     ✅ Interpolation ennemis
+└── system_player_input.rs     ✅ Capture input shoot
+```
+
+### Points clés réalisés
+
+- ✅ Filtres de collision: projectiles touchent ennemis (despawn sur impact)
+- ✅ Architecture Full Server Authority (physique serveur uniquement)
+- ✅ Synchronisation reliable pour spawn/despawn/mort
+- ✅ Synchronisation unreliable pour positions @ 30Hz
+- ✅ Interpolation fluide des ennemis côté client
+- ✅ Système de tir réactif (clic gauche pour tirer)
+- ✅ Gestion des dégâts et mort des ennemis
+- ✅ Prévention double-despawn avec HashSet
+- ✅ Couleurs différenciées par type d'ennemi (Basic=Blanc, Medium=Jaune, Hard=Rouge)
+
+---
+
+## 🎯 Prochaines fonctionnalités à implémenter
+
+### 1. Amélioration du système d'ennemis
+
+**Priorité:** Haute  
+**Statut:** Planifié
+
+**Objectifs:**
+
+- [ ] IA de base pour les ennemis (suivre joueur le plus proche)
+- [ ] Système de spawn par vagues (remplacer spawn fixe)
+- [ ] Augmentation progressive de la difficulté
+- [ ] Limites de spawn (éviter spam infini)
+
+**Fichiers à créer/modifier:**
+
+- `game_core/src/enemy.rs` : Ajout IA component
+- `server/src/handler/enemy_ai.rs` : Système de suivi joueur
+- `server/src/handler/wave_system.rs` : Gestion vagues
+
+---
+
+### 2. Cooldown et feedback de tir
+
+**Priorité:** Moyenne  
+**Statut:** Planifié
+
+**Objectifs:**
+
+- [ ] Cooldown entre tirs (éviter spam)
+- [ ] Feedback visuel du cooldown côté client
+- [ ] Son de tir (optionnel)
+- [ ] Particules pour projectiles (optionnel)
+
+**Fichiers à créer/modifier:**
+
+- `game_core/src/player.rs` : Ajout `ShootCooldown` component
+- `server/src/handler/player_input.rs` : Vérifier cooldown avant tir
+- `client/src/game/player.rs` : UI cooldown
+
+---
+
+### 3. Optimisation réseau
+
+**Priorité:** Moyenne  
+**Statut:** Planifié
+
+**Objectifs:**
+
+- [ ] Object pooling pour projectiles (éviter despawn/spawn constant)
+- [ ] Compression des messages réseau si nécessaire
+- [ ] Culling spatial (ne pas envoyer ennemis hors écran)
+- [ ] Mesure de performances réseau (metrics)
 
 ---
 
@@ -187,5 +289,5 @@ participer.
 
 ---
 
-*Dernière mise à jour: 2025-01-24*
+*Dernière mise à jour: 2025-12-01*
 
