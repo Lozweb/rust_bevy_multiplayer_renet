@@ -70,6 +70,14 @@ pub enum PlayerMessages {
     PlayerRemove {
         client_id: ClientId,
     },
+    PlayerDamaged {
+        player_entity: Entity,
+        damage: u32,
+        current_health: u32,
+    },
+    PlayerDeath {
+        player_entity: Entity,
+    },
 }
 #[derive(Debug, Serialize, Deserialize)]
 pub enum PlayerPositionMessages {

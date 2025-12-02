@@ -10,12 +10,7 @@ use serde::{Deserialize, Serialize};
 #[reflect(Component)]
 pub struct Projectile {
     pub damage: u32,
-}
-
-impl Projectile {
-    pub fn new(damage: u32) -> Self {
-        Self { damage }
-    }
+    pub owner: Entity,
 }
 
 #[derive(Debug, Clone, Reflect, Component)]
@@ -59,14 +54,14 @@ impl Projectile {
 }
 
 pub fn spawn_projectil(
-    weapon: &Projectile,
+    projectile: &Projectile,
     position: Vec3,
     aim_direction: AimDirection,
     commands: &mut Commands,
     meshes: &mut Option<ResMut<Assets<Mesh>>>,
     materials: &mut Option<ResMut<Assets<ColorMaterial>>>,
 ) -> Entity {
-    let mut entity_commands = commands.spawn(weapon.projectil_bundle(position, aim_direction));
+    let mut entity_commands = commands.spawn(projectile.projectil_bundle(position, aim_direction));
 
     if let (Some(meshes), Some(materials)) = (meshes.as_mut(), materials.as_mut()) {
         entity_commands.insert((

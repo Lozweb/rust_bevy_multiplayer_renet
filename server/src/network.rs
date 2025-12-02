@@ -1,4 +1,8 @@
 use crate::handler::collision_event::collision_event;
+use crate::handler::enemy_ai::{
+    enemny_chase_movement, enemy_target_acquisition, tick_enemy_damage_cooldowns,
+    TargetAcquisitionTimer,
+};
 use crate::handler::player_input::{
     apply_movement, interpolate_movement_intent, process_client_inputs,
 };
@@ -14,17 +18,28 @@ use game_core::server::{
 };
 
 pub(super) fn plugin(app: &mut App) {
+    app.init_resource::<TargetAcquisitionTimer>();
+
     app.add_systems(
         Update,
         (
             server_event,
+            tick_enemy_damage_cooldowns,
             process_client_inputs,
             interpolate_movement_intent.after(process_client_inputs),
             apply_movement.after(interpolate_movement_intent),
             sync_players_position.after(apply_movement),
         ),
     );
-    app.add_systems(FixedUpdate, (sync_enemies_positions, collision_event));
+    app.add_systems(
+        FixedUpdate,
+        (
+            enemy_target_acquisition,
+            enemny_chase_movement.after(enemy_target_acquisition),
+            sync_enemies_positions,
+            collision_event,
+        ),
+    );
 }
 
 pub fn send_player_event(

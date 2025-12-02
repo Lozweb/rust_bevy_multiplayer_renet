@@ -21,6 +21,28 @@ impl Default for EnemiesPositionTimer {
     }
 }
 
+#[derive(Component, Debug, Clone, Copy, Reflect)]
+#[reflect(Component)]
+pub struct EnemyAi {
+    pub target: Option<Entity>,
+    pub aggro_range: f32,
+    pub move_speed: f32,
+    pub state: AiState,
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, Reflect)]
+pub enum AiState {
+    Idle,
+    Chasing,
+}
+
+#[derive(Component, Debug, Clone, Reflect)]
+#[reflect(Component)]
+pub struct ContactDamage {
+    pub damage: u32,
+    pub cooldown: Timer,
+}
+
 #[derive(Component, Debug, Clone, Copy, Serialize, Deserialize, Reflect)]
 #[reflect(Component)]
 pub struct EnemyServerEntity {
@@ -53,6 +75,7 @@ impl Enemy {
             LinearDamping(LINEAR_DAMPING),
             Friction::new(FRICTION_COEFFICIENT),
             Restitution::new(RESTITUTION_COEFFICIENT),
+            CollisionEventsEnabled,
             NetworkedTransform::default(),
         )
     }
@@ -102,6 +125,36 @@ impl EnemyType {
             EnemyType::Hard => Color::from(RED),
         }
     }
+
+    pub fn create_ai(&self) -> EnemyAi {
+        let (aggro, speed) = match self {
+            EnemyType::Basic => (400.0, 200.0),
+            EnemyType::Medium => (500.0, 300.0),
+            EnemyType::Hard => (350.0, 150.0),
+        };
+
+        EnemyAi {
+            target: None,
+            aggro_range: aggro,
+            move_speed: speed,
+            state: AiState::Idle,
+        }
+    }
+
+    pub fn create_contact_damage(&self) -> ContactDamage {
+        let (damage, cooldown) = match self {
+            EnemyType::Basic => (5, 1.0),
+            EnemyType::Medium => (10, 0.8),
+            EnemyType::Hard => (20, 0.5),
+        };
+
+        let timer = Timer::from_seconds(cooldown, TimerMode::Once);
+
+        ContactDamage {
+            damage,
+            cooldown: timer,
+        }
+    }
 }
 
 pub fn spawn_enemy(
@@ -111,7 +164,11 @@ pub fn spawn_enemy(
     meshes: &mut Option<ResMut<Assets<Mesh>>>,
     materials: &mut Option<ResMut<Assets<ColorMaterial>>>,
 ) -> Entity {
-    let mut entity_commands = commands.spawn(Enemy::new(enemy_type).enemy_bundle(position));
+    let enemy = Enemy::new(enemy_type);
+    let ai = enemy_type.create_ai();
+    let contact_damage = enemy_type.create_contact_damage();
+
+    let mut entity_commands = commands.spawn((enemy.enemy_bundle(position), ai, contact_damage));
 
     if let (Some(mesh), Some(materials)) = (meshes.as_mut(), materials.as_mut()) {
         entity_commands.insert((

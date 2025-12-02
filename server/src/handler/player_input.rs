@@ -1,54 +1,71 @@
-use crate::network::broadcast_projectile_event;
+use crate::network::{broadcast_player_event, broadcast_projectile_event};
 use crate::resource::server_lobby::ServerLobby;
 use bevy::prelude::*;
 use bevy_renet::renet::RenetServer;
-use game_core::client::ClientMessage;
+use game_core::client::{ClientCommand, ClientMessage};
 use game_core::network::{ClientChannel, MessageDeserialize};
-use game_core::player::{AimDirection, MovementController};
+use game_core::player::{AimDirection, MovementController, PlayerHealth};
 use game_core::projectile::{spawn_projectil, Projectile};
-use game_core::server::ProjectileMessages::ProjectileSpawned;
+use game_core::server::{PlayerMessages, ProjectileMessages::ProjectileSpawned};
 
 pub fn process_client_inputs(
     mut commands: Commands,
     mut server: ResMut<RenetServer>,
     lobby: Res<ServerLobby>,
-    mut players: Query<(&Transform, &mut MovementController, &mut AimDirection)>,
+    mut players: Query<(
+        &Transform,
+        &mut MovementController,
+        &mut AimDirection,
+        &mut PlayerHealth,
+    )>,
 ) {
     for client_id in server.clients_id() {
         while let Some(message) = server.receive_message(client_id, ClientChannel::Input) {
-            if let ClientMessage::Input(input) = ClientMessage::from_bytes(&message)
-                && let Some(player_entity) = lobby.get_player(&client_id)
-                && let Ok((transform, mut controller, mut aim_direction)) =
-                    players.get_mut(*player_entity)
-            {
-                let mut movement = Vec2::ZERO;
+            match ClientMessage::from_bytes(&message) {
+                ClientMessage::Input(input) => {
+                    if let Some(player_entity) = lobby.get_player(&client_id)
+                        && let Ok((transform, mut controller, mut aim_direction, _)) =
+                            players.get_mut(*player_entity)
+                    {
+                        let mut movement = Vec2::ZERO;
 
-                if input.up {
-                    movement.y += 1.0;
-                }
-                if input.down {
-                    movement.y -= 1.0;
-                }
-                if input.left {
-                    movement.x -= 1.0;
-                }
-                if input.right {
-                    movement.x += 1.0;
-                }
+                        if input.up {
+                            movement.y += 1.0;
+                        }
+                        if input.down {
+                            movement.y -= 1.0;
+                        }
+                        if input.left {
+                            movement.x -= 1.0;
+                        }
+                        if input.right {
+                            movement.x += 1.0;
+                        }
 
-                if input.shoot {
-                    handle_shoot(
-                        transform.translation,
-                        *aim_direction,
-                        &mut server,
-                        &mut commands,
-                        &mut None,
-                        &mut None,
-                    );
-                }
+                        if input.shoot {
+                            handle_shoot(
+                                *player_entity,
+                                transform.translation,
+                                *aim_direction,
+                                &mut server,
+                                &mut commands,
+                                &mut None,
+                                &mut None,
+                            );
+                        }
 
-                controller.target_intent = movement.normalize_or_zero();
-                aim_direction.0 = input.aim_direction;
+                        controller.target_intent = movement.normalize_or_zero();
+                        aim_direction.0 = input.aim_direction;
+                    }
+                }
+                ClientMessage::Command(cmd) => match cmd {
+                    ClientCommand::Respawn => {
+                        handle_respawn(client_id, &lobby, &mut players, &mut server);
+                    }
+                },
+                ClientMessage::ErrorMessage { reason } => {
+                    warn!("Error message from client {}: {}", client_id, reason);
+                }
             }
         }
     }
@@ -100,6 +117,7 @@ pub fn apply_movement(
 }
 
 fn handle_shoot(
+    player_entity: Entity,
     position: Vec3,
     aim_direction: AimDirection,
     server: &mut ResMut<RenetServer>,
@@ -108,7 +126,10 @@ fn handle_shoot(
     materials: &mut Option<ResMut<Assets<ColorMaterial>>>,
 ) {
     let server_entity = spawn_projectil(
-        &Projectile { damage: 10 },
+        &Projectile {
+            damage: 10,
+            owner: player_entity,
+        },
         position,
         aim_direction,
         commands,
@@ -125,4 +146,37 @@ fn handle_shoot(
             direction: aim_direction.0,
         },
     );
+}
+
+fn handle_respawn(
+    client_id: bevy_renet::renet::ClientId,
+    lobby: &ServerLobby,
+    players: &mut Query<(
+        &Transform,
+        &mut MovementController,
+        &mut AimDirection,
+        &mut PlayerHealth,
+    )>,
+    server: &mut ResMut<RenetServer>,
+) {
+    if let Some(player_entity) = lobby.get_player(&client_id)
+        && let Ok((_, _, _, mut health)) = players.get_mut(*player_entity)
+        && health.is_dead()
+    {
+        health.current = health.max;
+
+        info!(
+            "Player {:?} respawned with {} HP",
+            client_id, health.current
+        );
+
+        broadcast_player_event(
+            server,
+            PlayerMessages::PlayerDamaged {
+                player_entity: *player_entity,
+                damage: 0,
+                current_health: health.current,
+            },
+        );
+    }
 }

@@ -1,6 +1,4 @@
-use crate::client::DisconnectUser;
-use crate::menu::Menu;
-use crate::screens::Screen;
+use crate::menu::{quit_to_title, Menu};
 use crate::theme::widget;
 use bevy::prelude::*;
 
@@ -27,13 +25,4 @@ fn open_settings_menu(_: On<Pointer<Click>>, mut next_menu: ResMut<NextState<Men
 
 fn close_menu(_: On<Pointer<Click>>, mut next_menu: ResMut<NextState<Menu>>) {
     next_menu.set(Menu::None);
-}
-
-fn quit_to_title(
-    _: On<Pointer<Click>>,
-    mut next_screen: ResMut<NextState<Screen>>,
-    mut commands: Commands,
-) {
-    commands.trigger(DisconnectUser);
-    next_screen.set(Screen::Title);
 }

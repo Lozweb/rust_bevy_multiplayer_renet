@@ -87,7 +87,10 @@ pub fn projectile_spawned(
     materials: &mut Option<ResMut<Assets<ColorMaterial>>>,
 ) {
     let projectil_entity = spawn_projectil(
-        &Projectile { damage },
+        &Projectile {
+            damage,
+            owner: server_entity,
+        },
         position,
         AimDirection(direction),
         commands,

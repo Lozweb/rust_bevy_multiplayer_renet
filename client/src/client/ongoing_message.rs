@@ -2,6 +2,7 @@ use crate::client::enemy_event_handler::enemy_message;
 use crate::client::player_event_handler::player_message;
 use crate::client::projectil_event_handler::projectile_message;
 use crate::game::level::Level;
+use crate::menu::Menu;
 use crate::resource::{ClientLobby, CurrentClientId};
 use bevy::prelude::*;
 use bevy_renet::renet::RenetClient;
@@ -16,8 +17,9 @@ pub fn on_client_event(
     mut meshes: Option<ResMut<Assets<Mesh>>>,
     mut materials: Option<ResMut<Assets<ColorMaterial>>>,
     level_query: Query<Entity, With<Level>>,
+    mut next_menu: ResMut<NextState<Menu>>,
 ) {
-    let Some(_current_client_id) = current_client_id else {
+    let Some(current_client_id) = current_client_id else {
         return;
     };
 
@@ -31,6 +33,8 @@ pub fn on_client_event(
                     &mut meshes,
                     &mut materials,
                     &level_query,
+                    &current_client_id,
+                    &mut next_menu,
                 );
             }
             ServerReliableMessages::EnemyEvent(message) => {

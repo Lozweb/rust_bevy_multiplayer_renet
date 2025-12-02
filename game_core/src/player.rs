@@ -22,6 +22,41 @@ impl Default for PlayersPositionTimer {
         }
     }
 }
+
+#[derive(Component, Debug, Clone, Copy, Reflect)]
+#[reflect(Component)]
+pub struct PlayerHealth {
+    pub current: u32,
+    pub max: u32,
+}
+
+impl Default for PlayerHealth {
+    fn default() -> Self {
+        Self {
+            current: 100,
+            max: 100,
+        }
+    }
+}
+
+impl PlayerHealth {
+    pub fn apply_damage(&mut self, damage: u32) {
+        if damage >= self.current {
+            self.current = 0;
+        } else {
+            self.current -= damage;
+        }
+    }
+
+    pub fn is_dead(&self) -> bool {
+        self.current == 0
+    }
+
+    pub fn heal(&mut self, amount: u32) {
+        self.current = (self.current + amount).min(self.max);
+    }
+}
+
 #[derive(Debug, Default, Clone, Copy, Serialize, Deserialize, Component, Resource)]
 pub struct PlayerInput {
     pub up: bool,
@@ -91,6 +126,7 @@ pub fn spawn_player(
         LockedAxes::ROTATION_LOCKED,
         Friction::new(0.1),
         Restitution::new(0.0),
+        CollisionEventsEnabled,
     ));
 
     if let (Some(meshes), Some(materials)) = (meshes.as_mut(), materials.as_mut()) {

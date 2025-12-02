@@ -4,10 +4,15 @@ use bevy::prelude::Component;
 use bincode::error::DecodeError;
 use serde::{Deserialize, Serialize};
 
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+pub enum ClientCommand {
+    Respawn,
+}
+
 #[derive(Debug, Serialize, Deserialize, Component)]
 pub enum ClientMessage {
     Input(PlayerInput),
-    Command(String),
+    Command(ClientCommand),
     ErrorMessage { reason: String },
 }
 

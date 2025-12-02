@@ -7,7 +7,7 @@ use bevy::mesh::Mesh;
 use bevy::prelude::{ColorMaterial, Commands, Entity, Query, ResMut, Transform};
 use bevy_renet::renet::{ClientId, RenetServer};
 use game_core::enemy::{Enemy, EnemyServerEntity};
-use game_core::player::{spawn_player, AimDirection, MovementController, PlayerInfo};
+use game_core::player::{spawn_player, AimDirection, MovementController, PlayerHealth, PlayerInfo};
 use game_core::server::PlayerMessages;
 use tracing::info;
 
@@ -27,7 +27,8 @@ pub fn client_connected(
     commands
         .entity(server_entity)
         .insert(MovementController::default())
-        .insert(AimDirection::default());
+        .insert(AimDirection::default())
+        .insert(PlayerHealth::default());
 
     lobby.add_player(&client_id, server_entity);
 

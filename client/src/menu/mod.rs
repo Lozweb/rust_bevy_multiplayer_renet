@@ -1,17 +1,25 @@
+mod game_over;
 mod main;
 mod pause;
 mod settings;
 
+use crate::client::DisconnectUser;
+use crate::screens::Screen;
 use bevy::app::App;
 use bevy::input::common_conditions::input_just_pressed;
 use bevy::prelude::{
-    in_state, AppExtStates, IntoScheduleConfigs, IntoSystem, KeyCode, NextState, OnEnter, ResMut,
-    States, SystemCondition, Update,
+    in_state, AppExtStates, Click, Commands, IntoScheduleConfigs, IntoSystem, KeyCode, NextState,
+    On, OnEnter, Pointer, ResMut, States, SystemCondition, Update,
 };
 
 pub(super) fn plugin(app: &mut App) {
     app.init_state::<Menu>();
-    app.add_plugins((main::plugin, pause::plugin, settings::plugin));
+    app.add_plugins((
+        game_over::plugin,
+        main::plugin,
+        pause::plugin,
+        settings::plugin,
+    ));
 }
 
 #[derive(States, Copy, Clone, Eq, PartialEq, Hash, Debug, Default)]
@@ -21,6 +29,7 @@ pub enum Menu {
     Main,
     Settings,
     Pause,
+    GameOver,
 }
 
 fn setup_menu<Marker>(
@@ -36,4 +45,13 @@ fn setup_menu<Marker>(
         })
         .run_if(in_state(menu_state).and(input_just_pressed(KeyCode::Escape))),
     );
+}
+
+pub fn quit_to_title(
+    _: On<Pointer<Click>>,
+    mut next_screen: ResMut<NextState<Screen>>,
+    mut commands: Commands,
+) {
+    commands.trigger(DisconnectUser);
+    next_screen.set(Screen::Title);
 }
