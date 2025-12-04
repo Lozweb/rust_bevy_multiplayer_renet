@@ -15,11 +15,30 @@ struct LocalCollider;
 pub(super) fn plugin(app: &mut App) {
     app.add_systems(Update, on_map_loaded);
     app.add_systems(OnEnter(Screen::Gameplay), setup_client_collisions);
+
+    #[cfg(feature = "dev")]
+    app.add_systems(Update, debug_collider_count);
+}
+
+#[cfg(feature = "dev")]
+fn debug_collider_count(
+    colliders: Query<&Name, (With<avian2d::prelude::Collider>, With<LocalCollider>)>,
+) {
+    use std::sync::atomic::{AtomicUsize, Ordering};
+    static LAST_COUNT: AtomicUsize = AtomicUsize::new(0);
+
+    let count = colliders.iter().count();
+    let last = LAST_COUNT.load(Ordering::Relaxed);
+
+    if count != last {
+        info!("🔍 [DEBUG] Local colliders count: {}", count);
+        LAST_COUNT.store(count, Ordering::Relaxed);
+    }
 }
 
 /// Crée les colliders côté client pour une meilleure sensation de jeu
 fn setup_client_collisions(mut commands: Commands) {
-    let map_path = "../assets/level/level_1.tmx";
+    let map_path = "assets/level/level_1.tmx";
 
     match parse_tiled_collisions(map_path) {
         Ok(collisions) => {

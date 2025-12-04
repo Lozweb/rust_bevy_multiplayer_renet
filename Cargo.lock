@@ -2157,7 +2157,6 @@ dependencies = [
  "bevy_renet",
  "game_core",
  "rand",
- "tiled 0.13.0",
  "tracing",
 ]
 
