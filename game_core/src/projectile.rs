@@ -29,10 +29,12 @@ impl ProjectileLifeTime {
 
 impl Projectile {
     pub fn projectil_bundle(&self, position: Vec3, aim_direction: AimDirection) -> impl Bundle {
-        let speed = 1400.0;
+        let speed = 2400.0;
         let spawn_distance = 40.0;
         let dir = Vec3::new(aim_direction.0.cos(), aim_direction.0.sin(), 0.0);
-        let spawn_pos = position + dir * spawn_distance;
+        let spawn_pos_2d = position + dir * spawn_distance;
+        let spawn_pos = Vec3::new(spawn_pos_2d.x, spawn_pos_2d.y, 10.0);
+
         (
             *self,
             Transform::from_translation(spawn_pos),

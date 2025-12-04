@@ -9,6 +9,8 @@ pub mod network;
 pub mod player;
 pub mod projectile;
 pub mod server;
+pub mod tiled_level;
+pub mod tiled_parser;
 pub mod transport;
 
 #[derive(Component, Debug)]

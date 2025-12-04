@@ -83,7 +83,12 @@ pub fn interpolate_networked_players(
     let delta = time.delta_secs();
 
     for (networked, mut transform, mut aim_dir, is_local) in &mut players {
-        let target = networked.target_position;
+        let current_z = transform.translation.z;
+        let target = Vec3::new(
+            networked.target_position.x,
+            networked.target_position.y,
+            current_z,
+        );
         let distance = transform.translation.distance(target);
 
         if is_local.is_some() {
@@ -121,7 +126,12 @@ pub fn interpolate_networked_enemies(
     let delta = time.delta_secs();
 
     for (networked, mut transform) in &mut enemies {
-        let target = networked.target_position;
+        let current_z = transform.translation.z;
+        let target = Vec3::new(
+            networked.target_position.x,
+            networked.target_position.y,
+            current_z,
+        );
         let distance = transform.translation.distance(target);
 
         if distance > TELEPORT_THRESHOLD {

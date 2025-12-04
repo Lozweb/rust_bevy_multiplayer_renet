@@ -66,9 +66,11 @@ impl Enemy {
     }
 
     pub fn enemy_bundle(&self, position: Vec3) -> impl Bundle {
+        let spawn_position = Vec3::new(position.x, position.y, 10.0);
+
         (
             *self,
-            Transform::from_translation(position),
+            Transform::from_translation(spawn_position),
             RigidBody::Dynamic,
             Collider::circle(EnemyType::size(&self.enemy_type)),
             Mass(EnemyType::mass(&self.enemy_type)),

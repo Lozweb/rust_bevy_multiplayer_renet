@@ -289,5 +289,21 @@ participer.
 
 ---
 
-*Dernière mise à jour: 2025-12-01*
+## 📈 Statistiques du projet
+
+**Systèmes implémentés** : 12+  
+**Messages réseau** : 8 types (Reliable + Unreliable)  
+**Composants partagés** : 15+  
+**Systèmes IA** : 3 (acquisition, mouvement, cooldown)  
+**États de menu** : 5 (None, Main, Settings, Pause, GameOver)
+
+**Performance réseau** :
+
+- Positions : 30 Hz (unreliable)
+- Événements : Reliable avec garantie d'ordre
+- Throttling IA : 0.5s (2 Hz)
+
+---
+
+*Dernière mise à jour: 2025-12-03*
 

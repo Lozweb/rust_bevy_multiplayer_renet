@@ -16,6 +16,7 @@ tracing = { version = "0.1", features = [
     "max_level_debug",
     "release_max_level_warn",
 ] }
+bevy_ecs_tiled = "0.10.0"
 
 [features]
 # Default to a native dev build.

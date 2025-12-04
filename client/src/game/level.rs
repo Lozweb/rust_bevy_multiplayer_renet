@@ -1,38 +1,70 @@
 use crate::audio::music;
 use crate::screens::Screen;
 use bevy::prelude::*;
-use game_core::asset_tracking::LoadResource;
-use game_core::level::{wall_bundle, LEVEL_ARENA_HEIGHT, LEVEL_WALL_THICKNESS};
+use bevy_ecs_tiled::prelude::*;
+use game_core::tiled_level::create_collision_bundle;
+use game_core::tiled_parser::parse_tiled_collisions;
 
 #[derive(Component)]
 pub struct Level;
 
+/// Marqueur pour les colliders créés côté client (pas envoyés par le serveur)
+#[derive(Component)]
+struct LocalCollider;
+
 pub(super) fn plugin(app: &mut App) {
-    app.load_resource::<LevelAssets>();
+    app.add_systems(Update, on_map_loaded);
+    app.add_systems(OnEnter(Screen::Gameplay), setup_client_collisions);
 }
 
-#[derive(Resource, Asset, Clone, Reflect)]
-#[reflect(Resource)]
-pub struct LevelAssets {
-    #[dependency]
-    music: Handle<AudioSource>,
-}
+/// Crée les colliders côté client pour une meilleure sensation de jeu
+fn setup_client_collisions(mut commands: Commands) {
+    let map_path = "../assets/level/level_1.tmx";
 
-impl FromWorld for LevelAssets {
-    fn from_world(world: &mut World) -> Self {
-        let assets = world.resource::<AssetServer>();
-        Self {
-            music: assets.load("audio/music/space_ambiance.ogg"),
+    match parse_tiled_collisions(map_path) {
+        Ok(collisions) => {
+            for (idx, rect) in collisions.iter().enumerate() {
+                // Créer un collider statique côté client
+                // Position avec z = -100 pour être cohérent avec la map visuelle
+                let mut collision_rect = rect.clone();
+                collision_rect.position.z = -100.0;
+
+                commands
+                    .spawn(create_collision_bundle(
+                        format!("ClientWall_{}", idx),
+                        collision_rect,
+                    ))
+                    .insert((LocalCollider, DespawnOnExit(Screen::Gameplay)));
+            }
+            info!(
+                "✅ [CLIENT] Created {} local collision walls for better game feel",
+                collisions.len()
+            );
+        }
+        Err(e) => {
+            warn!("⚠️ [CLIENT] Failed to load client-side collisions: {}", e);
         }
     }
 }
 
-pub fn spawn_level(
-    mut commands: Commands,
-    level_assets: Res<LevelAssets>,
-    mut materials: ResMut<Assets<ColorMaterial>>,
-    mut meshes: ResMut<Assets<Mesh>>,
+fn on_map_loaded(
+    mut events: MessageReader<TiledEvent<MapCreated>>,
+    assets: Res<Assets<TiledMapAsset>>,
 ) {
+    for event in events.read() {
+        if let Some(map) = event.get_map(&assets) {
+            info!(
+                "✅ Map Tiled chargée : {}x{} tuiles (taille: {}x{}px)",
+                map.width,
+                map.height,
+                map.width * map.tile_width,
+                map.height * map.tile_height
+            );
+        }
+    }
+}
+
+pub fn spawn_level(mut commands: Commands, asset_server: Res<AssetServer>) {
     commands
         .spawn((
             Name::new("Level"),
@@ -44,87 +76,17 @@ pub fn spawn_level(
         .with_children(|parent| {
             parent.spawn((
                 Name::new("Gameplay Music"),
-                music(level_assets.music.clone()),
+                music(asset_server.load("audio/music/space_ambiance.ogg")),
             ));
 
-            let wall_material = materials.add(ColorMaterial::from(Color::srgb(0.3, 0.3, 0.4)));
-            let obstacle_material = materials.add(ColorMaterial::from(Color::srgb(0.5, 0.3, 0.3)));
-
-            parent
-                .spawn(wall_bundle(
-                    "WallTop".to_string(),
-                    Vec3::new(0.0, LEVEL_ARENA_HEIGHT / 2.0, 0.0),
-                    Vec2::new(LEVEL_ARENA_HEIGHT, LEVEL_WALL_THICKNESS),
-                ))
-                .insert((
-                    Mesh2d(meshes.add(Rectangle::new(LEVEL_ARENA_HEIGHT, LEVEL_WALL_THICKNESS))),
-                    MeshMaterial2d(wall_material.clone()),
-                ));
-
-            parent
-                .spawn(wall_bundle(
-                    "WallBottom".to_string(),
-                    Vec3::new(0.0, -LEVEL_ARENA_HEIGHT / 2.0, 0.0),
-                    Vec2::new(LEVEL_ARENA_HEIGHT, LEVEL_WALL_THICKNESS),
-                ))
-                .insert((
-                    Mesh2d(meshes.add(Rectangle::new(LEVEL_ARENA_HEIGHT, LEVEL_WALL_THICKNESS))),
-                    MeshMaterial2d(wall_material.clone()),
-                ));
-
-            parent
-                .spawn(wall_bundle(
-                    "WallLeft".to_string(),
-                    Vec3::new(-LEVEL_ARENA_HEIGHT / 2.0, 0.0, 0.0),
-                    Vec2::new(LEVEL_WALL_THICKNESS, LEVEL_ARENA_HEIGHT),
-                ))
-                .insert((
-                    Mesh2d(meshes.add(Rectangle::new(LEVEL_WALL_THICKNESS, LEVEL_ARENA_HEIGHT))),
-                    MeshMaterial2d(wall_material.clone()),
-                ));
-
-            parent
-                .spawn(wall_bundle(
-                    "WallRight".to_string(),
-                    Vec3::new(LEVEL_ARENA_HEIGHT / 2.0, 0.0, 0.0),
-                    Vec2::new(LEVEL_WALL_THICKNESS, LEVEL_ARENA_HEIGHT),
-                ))
-                .insert((
-                    Mesh2d(meshes.add(Rectangle::new(LEVEL_WALL_THICKNESS, LEVEL_ARENA_HEIGHT))),
-                    MeshMaterial2d(wall_material.clone()),
-                ));
-
-            parent
-                .spawn(wall_bundle(
-                    "CentralObstacle".to_string(),
-                    Vec3::ZERO,
-                    Vec2::new(100.0, 100.0),
-                ))
-                .insert((
-                    Mesh2d(meshes.add(Rectangle::new(100.0, 100.0))),
-                    MeshMaterial2d(obstacle_material.clone()),
-                ));
-
-            parent
-                .spawn(wall_bundle(
-                    "ObstacleLeft".to_string(),
-                    Vec3::new(-300.0, 100.0, 0.0),
-                    Vec2::new(80.0, 80.0),
-                ))
-                .insert((
-                    Mesh2d(meshes.add(Rectangle::new(80.0, 80.0))),
-                    MeshMaterial2d(obstacle_material.clone()),
-                ));
-
-            parent
-                .spawn(wall_bundle(
-                    "ObstacleRight".to_string(),
-                    Vec3::new(300.0, 100.0, 0.0),
-                    Vec2::new(80.0, 80.0),
-                ))
-                .insert((
-                    Mesh2d(meshes.add(Rectangle::new(80.0, 80.0))),
-                    MeshMaterial2d(obstacle_material),
-                ));
+            parent.spawn((
+                Name::new("TiledMap"),
+                TiledMap(asset_server.load("level/level_1.tmx")),
+                TilemapAnchor::Center,
+                TiledMapLayerZOffset(-100.0),
+                Transform::from_translation(Vec3::new(0.0, 0.0, -100.0)),
+            ));
         });
+
+    info!("✅ Level spawned with Tiled map");
 }

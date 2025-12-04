@@ -9,4 +9,5 @@ bevy_renet = "3.0.0"
 bincode = { version = "2.0.1", features = ["serde"] }
 serde = { version = "1.0.228", features = ["derive"] }
 avian2d = "0.4.1"
+tiled = "0.13"
 

@@ -15,6 +15,7 @@ use bevy::prelude::*;
 use bevy::utils::default;
 use bevy::window::{WindowPlugin, WindowResolution};
 use bevy::DefaultPlugins;
+use bevy_ecs_tiled::prelude::*;
 use bevy_renet::RenetClientPlugin;
 use game_core::asset_tracking;
 
@@ -53,6 +54,7 @@ impl Plugin for AppPlugin {
             audio::plugin,
             game::plugin,
             PhysicsPlugins::default(),
+            TiledPlugin::default(),
             #[cfg(feature = "dev")]
             dev_tools::plugin,
             menu::plugin,

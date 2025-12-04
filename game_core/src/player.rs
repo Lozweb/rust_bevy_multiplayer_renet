@@ -111,8 +111,10 @@ pub fn spawn_player(
 ) -> Entity {
     use avian2d::prelude::*;
 
+    let spawn_position = Vec3::new(position.x, position.y, 10.0);
+
     let mut entity_commands = commands.spawn((
-        Transform::from_translation(position),
+        Transform::from_translation(spawn_position),
         Visibility::default(),
         PlayerInfo {
             id: *client_id,
